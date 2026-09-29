@@ -35,7 +35,7 @@ const BUSINESSES = [
 const FAQS = [
   {
     q: "What if my video is longer than a minute?",
-    a: `We only edit clips under ${MAX_CLIP_SECONDS} seconds. Trim it before uploading, or split it into separate clips. Each clip counts as one video.`,
+    a: `We only edit clips under ${MAX_CLIP_SECONDS} secs. Trim it before uploading, or split it into separate clips. Each clip counts as one video.`,
   },
   {
     q: "Do I need a subscription?",
