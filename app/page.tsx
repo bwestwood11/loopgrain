@@ -1,69 +1,213 @@
-import Image from "next/image";
+import Link from "next/link";
+import { SiteHeader } from "@/components/site-header";
+import { HeroShowcase } from "@/components/hero-showcase";
+import { EditTimeline } from "@/components/edit-timeline";
+import { VideoCalculator } from "@/components/video-calculator";
+import { formatUSD, MAX_CLIP_SECONDS, PRICE_PER_VIDEO, TURNAROUND_DAYS } from "@/lib/pricing";
+
+const STEPS = [
+  {
+    title: "Choose how many videos",
+    body: "Create an account and pick a number. You pay for those videos and nothing else.",
+  },
+  {
+    title: "Upload your raw clips",
+    body: `Anything under ${MAX_CLIP_SECONDS} seconds, straight from your phone. Add a note about what you want people to do.`,
+  },
+  {
+    title: "Post the finished videos",
+    body: `Edited videos come back within ${TURNAROUND_DAYS} business days, sized for Reels, TikTok, and YouTube Shorts.`,
+  },
+];
+
+const BUSINESSES = [
+  "Restaurants and cafés",
+  "Salons and barbers",
+  "Contractors and home services",
+  "Gyms and studios",
+  "Real estate agents",
+  "Dentists and clinics",
+  "Boutiques and shops",
+  "Auto shops",
+  "Coaches and consultants",
+];
+
+const FAQS = [
+  {
+    q: "What if my video is longer than a minute?",
+    a: `We only edit clips under ${MAX_CLIP_SECONDS} seconds. Trim it before uploading, or split it into separate clips. Each clip counts as one video.`,
+  },
+  {
+    q: "Do I need a subscription?",
+    a: "No. Order five videos this month and none next month if that's what works. There's nothing to cancel.",
+  },
+  {
+    q: "What should I film?",
+    a: "Talk to the camera about something customers ask you, show a job from start to finish, or give a quick tour. Good light and clear audio matter more than a fancy camera.",
+  },
+  {
+    q: "What do I get back?",
+    a: "A vertical 1080×1920 MP4 for each clip, ready to upload to Instagram, TikTok, YouTube Shorts, and Facebook.",
+  },
+  {
+    q: "Who owns the finished videos?",
+    a: "You do. Post them anywhere, run them as ads, and keep them forever.",
+  },
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <>
+      <SiteHeader />
+
+      <main className="flex-1 overflow-x-clip">
+        {/* Hero */}
+        <section className="mx-auto grid w-full max-w-6xl items-center gap-12 px-4 pb-20 pt-8 sm:px-6 lg:grid-cols-[1fr_1.1fr] lg:pt-16">
+          <div>
+            <h1 className="display text-[clamp(3.25rem,9vw,6.5rem)] uppercase">
+              You film it.
+              <br />
+              We make it worth watching.
+            </h1>
+            <p className="mt-6 max-w-xl text-lg leading-relaxed text-slate">
+              Loopgrain turns the raw clips on your phone into short-form videos with captions,
+              motion graphics, and your branding. You pay per video. No subscription, no
+              editing software, no learning curve.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Link
+                href="/sign-up"
+                className="rounded-full bg-cobalt px-6 py-3.5 font-semibold text-white hover:bg-cobalt-deep"
+              >
+                Create an account
+              </Link>
+              <a
+                href="#pricing"
+                className="rounded-full border border-ink/20 px-6 py-3.5 font-semibold hover:bg-paper"
+              >
+                See pricing
+              </a>
+            </div>
+            <p className="mt-5 text-sm text-slate">
+              {formatUSD(PRICE_PER_VIDEO)} per video. Clips under {MAX_CLIP_SECONDS} seconds.
+            </p>
+          </div>
+
+          <HeroShowcase />
+        </section>
+
+        {/* What's in every edit */}
+        <section className="bg-paper py-20">
+          <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+            <h2 className="display max-w-3xl text-5xl sm:text-6xl">What goes into every edit</h2>
+            <p className="mt-4 max-w-2xl text-lg text-slate">
+              The things that make people stop, watch, and call you, layered onto every
+              video you order.
+            </p>
+            <div className="mt-10">
+              <EditTimeline />
+            </div>
+          </div>
+        </section>
+
+        {/* How it works */}
+        <section className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">
+          <h2 className="display text-5xl sm:text-6xl">How it works</h2>
+          <ol className="mt-10 grid gap-10 md:grid-cols-3 md:gap-8">
+            {STEPS.map((step, i) => (
+              <li key={step.title} className="border-t-2 border-ink pt-5">
+                <span className="display text-5xl text-cobalt">{i + 1}</span>
+                <h3 className="mt-3 text-xl font-semibold">{step.title}</h3>
+                <p className="mt-2 leading-relaxed text-slate">{step.body}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        {/* Pricing */}
+        <section id="pricing" className="scroll-mt-8 bg-paper py-20">
+          <div className="mx-auto grid w-full max-w-6xl gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:items-center">
+            <div>
+              <h2 className="display text-5xl sm:text-6xl">
+                One price.
+                <br />
+                Per video.
+              </h2>
+              <p className="mt-5 max-w-lg text-lg leading-relaxed text-slate">
+                Every video gets the full edit for {formatUSD(PRICE_PER_VIDEO)}. Order one to try
+                us out or fifty for the quarter. The price doesn&apos;t change and nothing renews.
+              </p>
+              <ul className="mt-6 space-y-2 text-slate">
+                <li>Clips must be under {MAX_CLIP_SECONDS} seconds</li>
+                <li>Delivered within {TURNAROUND_DAYS} business days</li>
+                <li>Sized for Reels, TikTok, and Shorts</li>
+              </ul>
+            </div>
+            <VideoCalculator />
+          </div>
+        </section>
+
+        {/* Who it's for */}
+        <section className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">
+          <h2 className="display max-w-3xl text-5xl sm:text-6xl">
+            Built for businesses that would rather be running the business
+          </h2>
+          <p className="mt-4 max-w-2xl text-lg text-slate">
+            If your customers scroll social media, short videos bring them to you. You
+            don&apos;t need to learn to edit to show up there.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+          <ul className="mt-8 flex flex-wrap gap-2">
+            {BUSINESSES.map((b) => (
+              <li key={b} className="rounded-full border border-ink/15 bg-paper px-4 py-2 text-sm">
+                {b}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* FAQ */}
+        <section id="faq" className="scroll-mt-8 bg-paper py-20">
+          <div className="mx-auto w-full max-w-3xl px-4 sm:px-6">
+            <h2 className="display text-5xl sm:text-6xl">Questions</h2>
+            <div className="mt-8 divide-y divide-line border-y border-line">
+              {FAQS.map((f) => (
+                <details key={f.q} className="group py-5">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-semibold">
+                    {f.q}
+                    <span
+                      aria-hidden="true"
+                      className="text-2xl text-cobalt transition-transform group-open:rotate-45"
+                    >
+                      +
+                    </span>
+                  </summary>
+                  <p className="mt-3 leading-relaxed text-slate">{f.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Closing CTA */}
+        <section className="bg-ink py-20 text-paper">
+          <div className="mx-auto flex w-full max-w-6xl flex-col items-start gap-6 px-4 sm:px-6 md:flex-row md:items-end md:justify-between">
+            <h2 className="display max-w-2xl text-5xl sm:text-6xl">
+              Your next customer is scrolling right now.
+            </h2>
+            <Link
+              href="/sign-up"
+              className="shrink-0 rounded-full bg-caption px-6 py-3.5 font-semibold text-ink hover:bg-paper"
+            >
+              Create an account
+            </Link>
+          </div>
+        </section>
       </main>
-    </div>
+
+      <footer className="mx-auto flex w-full max-w-6xl flex-wrap justify-between gap-2 px-4 py-8 text-sm text-slate sm:px-6">
+        <span>© {new Date().getFullYear()} Loopgrain</span>
+        <span>Short-form video editing for small businesses</span>
+      </footer>
+    </>
   );
 }

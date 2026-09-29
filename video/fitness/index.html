@@ -1,0 +1,367 @@
+<!doctype html>
+<!-- Fitness spot: "Game day". Sports-broadcast language: diagonal slash wipes, live heart-rate
+     monitor with ECG trace, round timer, telestrator freeze-frame with knee-angle analysis,
+     broadcast coach lower-third, 12-week bar chart with trend line, chevron CTA. -->
+<html lang="en" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="assets/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Barlow Condensed"; src: url("assets/fonts/barlow-cond-800i.woff2") format("woff2"); font-weight: 800; font-style: italic; }
+      @font-face { font-family: "Barlow Condensed"; src: url("assets/fonts/barlow-cond-600i.woff2") format("woff2"); font-weight: 600; font-style: italic; }
+      @font-face { font-family: "Inter"; src: url("assets/fonts/inter.woff2") format("woff2"); font-weight: 100 900; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1920px; overflow: hidden; background: #000; }
+      #root {
+        position: relative; width: 100%; height: 100%; overflow: hidden; background: #000;
+        font-family: "Inter", sans-serif; color: #fff;
+        --coral: #ff5a36; --navy: #0b1220; --sun: #ffd23f;
+      }
+      .cond { font-family: "Barlow Condensed", sans-serif; font-style: italic; font-weight: 800; text-transform: uppercase; }
+      .cam { position: absolute; inset: 0; overflow: hidden; }
+      .cam video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      .shade { position: absolute; left: 0; right: 0; bottom: 0; height: 1000px;
+        background: linear-gradient(to top, rgba(8, 12, 22, 0.88) 25%, rgba(8, 12, 22, 0)); }
+
+      .slash { position: absolute; top: -300px; bottom: -300px; width: 700px; }
+      #s1 { background: var(--coral); }
+      #s2 { background: var(--navy); }
+      #s3 { background: #fff; }
+
+      /* heart rate */
+      #hr { position: absolute; left: 56px; top: 110px; width: 560px; height: 210px; padding: 22px 28px; opacity: 0;
+        background: rgba(11, 18, 32, 0.85); border-left: 10px solid var(--coral); overflow: hidden; }
+      #hr .top { display: flex; align-items: center; gap: 18px; }
+      #hr .heart { width: 50px; height: 50px; }
+      #hr .bpm { font-size: 96px; line-height: 0.9; font-variant-numeric: tabular-nums; }
+      #hr .unit { font-size: 34px; color: var(--coral); }
+      #hr .trace { position: absolute; left: 28px; right: 28px; bottom: 16px; height: 70px; overflow: hidden; }
+      #hr .trace svg { position: absolute; left: 0; top: 0; }
+
+      /* hook */
+      #hook { position: absolute; left: 0; right: 0; top: 1150px; }
+      #hook .l { display: block; font-size: 230px; line-height: 1.12; white-space: nowrap; padding-left: 60px; }
+      #hook .l2 { color: var(--coral); padding-left: 200px; }
+      #hook .rule { display: block; margin: 26px 0 0 200px; width: 560px; height: 16px; background: #fff; transform-origin: 0 50%; }
+
+      /* round timer */
+      #round { position: absolute; left: 56px; right: 56px; top: 1560px; opacity: 0; }
+      #round .row { display: flex; justify-content: space-between; align-items: baseline; }
+      #round .lbl { font-size: 64px; }
+      #round .time { font-size: 110px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--sun); }
+      #round .track { margin-top: 16px; height: 22px; background: rgba(255, 255, 255, 0.2); transform: skewX(-18deg); }
+      #round .track i { display: block; height: 100%; background: var(--sun); transform-origin: 0 50%; }
+
+      /* telestrator freeze */
+      #freeze { position: absolute; inset: 0; opacity: 0; }
+      #freeze img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      #freeze .tint { position: absolute; inset: 0; background: rgba(11, 18, 32, 0.25); }
+      #tele { position: absolute; inset: 0; }
+      #replay { position: absolute; left: 56px; top: 110px; display: flex; align-items: center; gap: 20px; opacity: 0; }
+      #replay b { padding: 10px 26px; background: var(--coral); font-size: 64px; line-height: 1; }
+      #replay span { font-size: 48px; }
+      .tlabel { position: absolute; padding: 10px 22px; background: #fff; color: var(--navy); font-size: 52px; line-height: 1; opacity: 0; white-space: nowrap; }
+
+      /* coach lower third */
+      #coach { position: absolute; left: 0; top: 1470px; width: 1000px; opacity: 0; }
+      #coach .slab { position: relative; padding: 26px 40px 30px 60px; background: var(--navy); border-right: 16px solid var(--coral);
+        clip-path: polygon(0 0, 100% 0, 96% 100%, 0 100%); }
+      #coach .kicker { display: inline-block; padding: 6px 18px; background: var(--coral); font-size: 40px; line-height: 1; }
+      #coach .name { display: block; margin-top: 12px; font-size: 140px; line-height: 0.95; white-space: nowrap; }
+      #coach .meta { display: block; margin-top: 12px; font-size: 34px; font-weight: 700; color: rgba(255, 255, 255, 0.85); }
+      #coach .meta em { font-style: normal; color: var(--sun); }
+      #bug { position: absolute; right: 56px; top: 110px; width: 330px; padding: 22px 26px; opacity: 0;
+        background: rgba(11, 18, 32, 0.85); border-top: 10px solid var(--sun); text-align: right; }
+      #bug small { display: block; font-size: 36px; line-height: 1.2; color: rgba(255, 255, 255, 0.8); margin-bottom: 10px; }
+      #bug b { display: block; font-size: 130px; line-height: 1.15; font-variant-numeric: tabular-nums; }
+
+      /* 12-week chart */
+      #chart { position: absolute; left: 44px; right: 44px; top: 1060px; height: 640px; padding: 34px 40px; opacity: 0;
+        background: rgba(11, 18, 32, 0.88); border-top: 12px solid var(--coral); }
+      #chart .head { display: flex; justify-content: space-between; align-items: flex-end; }
+      #chart .title { font-size: 76px; line-height: 0.9; }
+      #chart .sub { display: block; font-size: 30px; font-weight: 700; font-style: normal; font-family: "Inter", sans-serif; text-transform: none; color: rgba(255, 255, 255, 0.7); margin-top: 8px; }
+      #chart .delta { padding: 10px 24px; background: var(--sun); color: var(--navy); font-size: 88px; line-height: 1; opacity: 0; font-variant-numeric: tabular-nums; }
+      #chart .plot { position: absolute; left: 40px; right: 40px; bottom: 70px; height: 360px; }
+      #chart .bars { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: 14px; }
+      #chart .bars i { flex: 1; display: block; background: linear-gradient(to top, rgba(255, 90, 54, 0.55), var(--coral)); transform-origin: 50% 100%; }
+      #chart .bars i:last-child { background: var(--sun); }
+      #chart svg { position: absolute; inset: 0; overflow: visible; }
+      #chart .axis { position: absolute; left: 40px; right: 40px; bottom: 26px; display: flex; justify-content: space-between; font-size: 30px; font-weight: 700; color: rgba(255, 255, 255, 0.6); }
+
+      #chips { position: absolute; right: 56px; top: 110px; display: flex; flex-direction: column; align-items: flex-end; gap: 16px; }
+      #chips div { padding: 12px 26px; background: #fff; color: var(--navy); font-size: 60px; line-height: 1; opacity: 0; }
+      #chips div b { color: var(--coral); }
+
+      #payoff { position: absolute; left: 0; right: 0; top: 1200px; opacity: 0; }
+      #payoff .l { display: block; font-size: 220px; line-height: 1.12; white-space: nowrap; padding-left: 60px; }
+      #payoff .l2 { color: var(--sun); padding-left: 140px; font-size: 180px; }
+
+      /* end card */
+      #end { position: absolute; left: 0; right: 0; bottom: 0; height: 1060px; opacity: 0; }
+      #end .b1 { position: absolute; inset: 0; background: var(--coral); clip-path: polygon(0 12%, 100% 0, 100% 100%, 0 100%); }
+      #end .b2 { position: absolute; inset: 0; background: var(--navy); clip-path: polygon(0 18%, 100% 7%, 100% 100%, 0 100%); }
+      #end .inner { position: absolute; left: 0; right: 0; top: 230px; bottom: 0; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+      #end .word { font-size: 250px; line-height: 0.9; white-space: nowrap; }
+      #end .word span { display: inline-block; opacity: 0; }
+      #end .word .c { color: var(--coral); }
+      #end .sub { font-size: 60px; letter-spacing: 0.08em; color: var(--sun); opacity: 0; }
+      #end .cta { display: flex; align-items: center; gap: 26px; margin-top: 50px; padding: 30px 56px; background: #fff; color: var(--navy); font-size: 76px; line-height: 1; opacity: 0; white-space: nowrap; }
+      #end .chev { display: flex; }
+      #end .chev i { display: block; width: 34px; height: 44px; background: var(--coral); clip-path: polygon(0 0, 55% 0, 100% 50%, 55% 100%, 0 100%, 45% 50%); margin-left: -6px; }
+      #end .fine { font-size: 34px; font-weight: 600; color: rgba(255, 255, 255, 0.75); opacity: 0; margin-top: 20px; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="13" data-width="1080" data-height="1920">
+      <div id="camA" class="cam">
+        <video id="vidA" class="clip" src="assets/segA.mp4" data-start="0" data-duration="3.5" data-track-index="0" data-color-grading="{&quot;preset&quot;:&quot;bright-pop&quot;,&quot;intensity&quot;:0.55,&quot;adjust&quot;:{&quot;contrast&quot;:0.08,&quot;temperature&quot;:0.03},&quot;details&quot;:{&quot;vignette&quot;:0.14}}" muted playsinline></video>
+      </div>
+      <div id="camB" class="cam">
+        <video id="vidB" class="clip" src="assets/segB.mp4" data-start="3.5" data-duration="3.5" data-track-index="0" data-color-grading="{&quot;preset&quot;:&quot;bright-pop&quot;,&quot;intensity&quot;:0.55,&quot;adjust&quot;:{&quot;contrast&quot;:0.08,&quot;temperature&quot;:0.03},&quot;details&quot;:{&quot;vignette&quot;:0.14}}" muted playsinline></video>
+      </div>
+      <div id="camC" class="cam">
+        <video id="vidC" class="clip" src="assets/segC.mp4" data-start="7" data-duration="6" data-track-index="0" data-color-grading="{&quot;preset&quot;:&quot;bright-pop&quot;,&quot;intensity&quot;:0.55,&quot;adjust&quot;:{&quot;contrast&quot;:0.08,&quot;temperature&quot;:0.03},&quot;details&quot;:{&quot;vignette&quot;:0.14}}" muted playsinline></video>
+      </div>
+
+      <!-- Telestrator freeze: a still of the exact frame at 4.5s, drawn over. -->
+      <div id="freeze">
+        <img src="assets/freeze.jpg" alt="" />
+        <div class="tint"></div>
+        <svg id="tele" viewBox="0 0 1080 1920" width="1080" height="1920" aria-hidden="true">
+          <circle id="tCircle" cx="250" cy="720" r="250" fill="none" stroke="#ffd23f" stroke-width="12" transform="rotate(-100 250 720)" />
+          <path id="tArrow" d="M 380 470 Q 560 300 720 470" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" />
+          <path id="tHead" d="M 690 420 L 730 480 L 660 488" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
+          <path id="tLeg" d="M 1040 1250 L 600 1310 L 730 1600" fill="none" stroke="#ff5a36" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" />
+          <path id="tArc" fill="none" stroke="#ffd23f" stroke-width="10" />
+          <circle id="tKnee" cx="600" cy="1310" r="22" fill="#ff5a36" />
+        </svg>
+        <div class="tlabel cond" id="lCue" style="left: 400px; top: 250px">Coach cue: sit deeper</div>
+        <div class="tlabel cond" id="lDepth" style="left: 250px; top: 1380px">Depth <span id="deg">180</span>&deg;</div>
+      </div>
+
+      <div class="shade"></div>
+
+      <!-- Shot A -->
+      <div id="hr">
+        <div class="top">
+          <svg class="heart" id="heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.3 3 4.5 6.6 4.5c2.1 0 3.6 1.2 5.4 3.1 1.8-1.9 3.3-3.1 5.4-3.1 3.6 0 5.7 3.8 4.2 7.3C19.5 16.4 12 21 12 21z" fill="#ff5a36" /></svg>
+          <span class="bpm cond" id="bpm">92</span><span class="unit cond">BPM</span>
+        </div>
+        <div class="trace"><svg id="ecg" width="1600" height="70" viewBox="0 0 1600 70" aria-hidden="true"><path id="ecgPath" fill="none" stroke="#ff5a36" stroke-width="5" stroke-linejoin="round" /></svg></div>
+      </div>
+
+      <div id="hook">
+        <span class="l cond" id="h1">She hated</span>
+        <span class="l l2 cond" id="h2">the gym.</span>
+        <i class="rule" id="hRule"></i>
+      </div>
+
+      <div id="round">
+        <div class="row"><span class="lbl cond">Battle ropes, round 1</span><span class="time cond" id="rtime">0:30</span></div>
+        <div class="track"><i id="rbar"></i></div>
+      </div>
+
+      <!-- Shot B -->
+      <div id="replay"><b class="cond">Replay</b><span class="cond">Form check</span></div>
+
+      <div id="coach">
+        <div class="slab">
+          <span class="kicker cond">Your coach</span>
+          <span class="name cond">Jordan Hayes</span>
+          <span class="meta">NASM certified. <em>&#9733; 4.9 from <span id="reviews">0</span> reviews</em></span>
+        </div>
+      </div>
+      <div id="bug"><small class="cond">Clients trained</small><b class="cond" id="clients">0</b></div>
+
+      <!-- Shot C -->
+      <div id="chips">
+        <div class="cond"><b>3x</b> a week</div>
+        <div class="cond"><b>45</b> min sessions</div>
+        <div class="cond"><b>12</b> weeks</div>
+      </div>
+
+      <div id="chart">
+        <div class="head">
+          <div><span class="title cond">Her squat</span><span class="sub">Working weight, week by week</span></div>
+          <div class="delta cond" id="delta">+0 lb</div>
+        </div>
+        <div class="plot">
+          <div class="bars" id="bars"></div>
+          <svg id="trendSvg" aria-hidden="true"><polyline id="trend" fill="none" stroke="#ffffff" stroke-width="7" stroke-linejoin="round" stroke-linecap="round" /></svg>
+        </div>
+        <div class="axis"><span>WK 1</span><span>WK 4</span><span>WK 8</span><span>WK 12</span></div>
+      </div>
+
+      <div id="payoff">
+        <span class="l cond" id="p1">Stronger</span>
+        <span class="l l2 cond" id="p2">every week.</span>
+      </div>
+
+      <div id="end">
+        <div class="b1"></div>
+        <div class="b2"></div>
+        <div class="inner">
+          <div class="word cond" id="word"></div>
+          <div class="sub cond">Fitness studio</div>
+          <div class="cta cond">Claim a free session <span class="chev"><i></i><i></i><i></i></span></div>
+          <div class="fine">1:1 and small-group training. Link in bio.</div>
+        </div>
+      </div>
+
+      <i id="s1" class="slash"></i><i id="s2" class="slash"></i><i id="s3" class="slash"></i>
+    </div>
+
+    <script>
+      (function () {
+        const tl = gsap.timeline({ paused: true });
+        const $ = (s) => document.querySelector(s);
+
+        // ---- static setup ----
+        // ECG: repeating beat pattern, scrolled left to read as a live trace.
+        let d = "M0 45";
+        for (let x = 0; x < 1600; x += 160) {
+          d += ` L${x + 40} 45 L${x + 52} 38 L${x + 62} 45 L${x + 74} 45 L${x + 82} 58 L${x + 92} 6 L${x + 102} 64 L${x + 112} 45 L${x + 128} 45 L${x + 142} 34 L${x + 156} 45`;
+        }
+        $("#ecgPath").setAttribute("d", d);
+
+        // Knee angle arc between the thigh and shin at the knee (600, 1310).
+        const K = [600, 1310], HIP = [1040, 1250], ANK = [730, 1600], AR = 110;
+        const a1 = Math.atan2(HIP[1] - K[1], HIP[0] - K[0]);
+        const a2 = Math.atan2(ANK[1] - K[1], ANK[0] - K[0]);
+        const p1 = [K[0] + AR * Math.cos(a1), K[1] + AR * Math.sin(a1)];
+        const p2 = [K[0] + AR * Math.cos(a2), K[1] + AR * Math.sin(a2)];
+        $("#tArc").setAttribute("d", `M ${p1[0]} ${p1[1]} A ${AR} ${AR} 0 0 1 ${p2[0]} ${p2[1]}`);
+        const kneeDeg = Math.round(((a2 - a1) * 180) / Math.PI);
+
+        const dash = (sel) => {
+          const el = $(sel), L = el.getTotalLength();
+          el.setAttribute("stroke-dasharray", L);
+          el.setAttribute("stroke-dashoffset", L);
+          return L;
+        };
+        ["#tCircle", "#tArrow", "#tHead", "#tLeg", "#tArc"].forEach(dash);
+
+        // 12-week chart: bars plus a trend line over their tops.
+        const weights = [65, 70, 75, 80, 85, 90, 95, 105, 110, 120, 125, 135];
+        const MAX = 140;
+        $("#bars").innerHTML = weights.map((w) => `<i style="height:${(w / MAX) * 100}%"></i>`).join("");
+        const PW = 912, PH = 360, gap = 14, bw = (PW - gap * 11) / 12;
+        const trendPts = weights.map((w, i) => `${(i * (bw + gap) + bw / 2).toFixed(1)},${(PH - (w / MAX) * PH - 18).toFixed(1)}`).join(" ");
+        $("#trend").setAttribute("points", trendPts);
+        $("#trendSvg").setAttribute("viewBox", `0 0 ${PW} ${PH}`);
+        $("#trendSvg").setAttribute("width", PW);
+        $("#trendSvg").setAttribute("height", PH);
+        const trendLen = dash("#trend");
+
+        $("#word").innerHTML = [..."IRON"].map((c) => `<span>${c}</span>`).join("") + [..."SIDE"].map((c) => `<span class="c">${c}</span>`).join("");
+
+        gsap.set(["#hr", "#round", "#freeze", "#replay", "#coach", "#bug", "#chart", "#payoff", "#end", "#hook"], { opacity: 0 });
+        gsap.set(["#s1", "#s2", "#s3"], { x: -900, skewX: -20 });
+
+        // ---------- Shot A (0 - 3.5) ----------
+        // Diagonal slashes cross the frame to open.
+        tl.fromTo("#s3", { x: -200 }, { x: 1400, duration: 0.45, ease: "power3.in" }, 0);
+        tl.fromTo("#s2", { x: -500 }, { x: 1400, duration: 0.5, ease: "power3.in" }, 0.02);
+        tl.fromTo("#s1", { x: -800 }, { x: 1400, duration: 0.55, ease: "power3.in" }, 0.04);
+        tl.fromTo("#camA", { scale: 1.3, rotation: -3 }, { scale: 1.08, rotation: 0, duration: 0.8, ease: "expo.out" }, 0.3);
+        tl.to("#camA", { scale: 1.16, duration: 2.4, ease: "none" }, 1.1);
+
+        tl.set("#hook", { opacity: 1 }, 0.45);
+        tl.fromTo("#h1", { x: -900, skewX: -25 }, { x: 0, skewX: 0, duration: 0.4, ease: "expo.out" }, 0.5);
+        tl.fromTo("#h2", { x: 900, skewX: -25 }, { x: 0, skewX: 0, duration: 0.4, ease: "expo.out" }, 0.75);
+        tl.fromTo("#hRule", { scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: "power3.out" }, 1.0);
+        tl.to("#hook", { opacity: 0, x: 120, duration: 0.22, ease: "power2.in" }, 1.8);
+
+        // Heart-rate monitor: BPM climbs, heart beats, trace scrolls.
+        tl.fromTo("#hr", { opacity: 0, x: -80 }, { opacity: 1, x: 0, duration: 0.35, ease: "power3.out" }, 0.6);
+        const bpm = { v: 92 };
+        tl.fromTo(bpm, { v: 92 }, { v: 168, duration: 2.6, ease: "power1.in", immediateRender: false, onUpdate: () => ($("#bpm").textContent = Math.round(bpm.v)) }, 0.7);
+        tl.fromTo("#ecg", { x: 0 }, { x: -640, duration: 2.8, ease: "none" }, 0.6);
+        for (let i = 0; i < 7; i++) {
+          tl.fromTo("#heart", { scale: 1 }, { keyframes: [{ scale: 1.3, duration: 0.08 }, { scale: 1, duration: 0.16 }], immediateRender: false }, 0.75 + i * 0.4);
+        }
+        tl.to("#hr", { opacity: 0, x: -60, duration: 0.2 }, 3.3);
+
+        // Round timer: 30 seconds on the clock, draining.
+        tl.fromTo("#round", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 2.0);
+        const rt = { v: 30 };
+        tl.fromTo(rt, { v: 30 }, { v: 17, duration: 1.3, ease: "none", immediateRender: false, onUpdate: () => ($("#rtime").textContent = "0:" + String(Math.ceil(rt.v)).padStart(2, "0")) }, 2.0);
+        tl.fromTo("#rbar", { scaleX: 1 }, { scaleX: 0.57, duration: 1.3, ease: "none" }, 2.0);
+        tl.to("#round", { opacity: 0, duration: 0.15 }, 3.3);
+
+        // Whip up with a coral slash across the cut.
+        tl.to("#camA", { yPercent: -18, duration: 0.16, ease: "power3.in" }, 3.34);
+        tl.fromTo("#s1", { x: -900 }, { x: 1400, duration: 0.35, ease: "power2.inOut", immediateRender: false }, 3.3);
+
+        // ---------- Shot B (3.5 - 7.0) ----------
+        tl.fromTo("#camB", { yPercent: 18, scale: 1.1 }, { yPercent: 0, scale: 1.05, duration: 0.35, ease: "power3.out" }, 3.5);
+
+        // Freeze on 4.5s and draw the analysis.
+        tl.set("#freeze", { opacity: 1 }, 4.5);
+        tl.fromTo("#freeze img", { filter: "saturate(1) brightness(1)" }, { filter: "saturate(0.35) brightness(0.9)", duration: 0.25 }, 4.5);
+        tl.fromTo("#freeze", { scale: 1.05 }, { keyframes: [{ scale: 1.0, duration: 0.08 }, { scale: 1.03, duration: 1.1 }], immediateRender: false }, 4.5);
+        tl.fromTo("#replay", { opacity: 0, x: -60 }, { opacity: 1, x: 0, duration: 0.25, ease: "power3.out" }, 4.52);
+        tl.to("#tCircle", { attr: { "stroke-dashoffset": 0 }, duration: 0.35, ease: "power2.inOut" }, 4.6);
+        tl.to("#tArrow", { attr: { "stroke-dashoffset": 0 }, duration: 0.3, ease: "power2.out" }, 4.85);
+        tl.to("#tHead", { attr: { "stroke-dashoffset": 0 }, duration: 0.12, ease: "power2.out" }, 5.12);
+        tl.fromTo("#lCue", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.25, ease: "back.out(2)" }, 5.0);
+        tl.to("#tLeg", { attr: { "stroke-dashoffset": 0 }, duration: 0.3, ease: "power2.inOut" }, 5.0);
+        tl.to("#tArc", { attr: { "stroke-dashoffset": 0 }, duration: 0.25, ease: "power2.out" }, 5.28);
+        tl.fromTo("#tKnee", { scale: 0, svgOrigin: "600 1310" }, { scale: 1, duration: 0.2, ease: "back.out(3)" }, 5.05);
+        tl.fromTo("#lDepth", { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.25, ease: "power3.out" }, 5.3);
+        const dg = { v: 180 };
+        tl.fromTo(dg, { v: 180 }, { v: kneeDeg, duration: 0.4, ease: "power2.out", immediateRender: false, onUpdate: () => ($("#deg").textContent = Math.round(dg.v)) }, 5.3);
+        tl.to(["#freeze", "#replay"], { opacity: 0, duration: 0.15 }, 5.85);
+
+        // Coach lower third + clients bug.
+        tl.fromTo("#coach", { opacity: 0, x: -1000 }, { opacity: 1, x: 0, duration: 0.4, ease: "expo.out" }, 5.9);
+        tl.fromTo("#bug", { opacity: 0, y: -60 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 6.0);
+        const rv = { n: 0 }, cl = { n: 0 };
+        tl.fromTo(rv, { n: 0 }, { n: 176, duration: 0.6, ease: "power2.out", immediateRender: false, onUpdate: () => ($("#reviews").textContent = Math.round(rv.n)) }, 6.1);
+        tl.fromTo(cl, { n: 0 }, { n: 140, duration: 0.6, ease: "power2.out", immediateRender: false, onUpdate: () => ($("#clients").textContent = Math.round(cl.n) + "+") }, 6.1);
+        tl.to("#camB", { scale: 1.12, duration: 1.1, ease: "none" }, 5.85);
+        tl.to(["#coach", "#bug"], { opacity: 0, duration: 0.12 }, 6.8);
+
+        // Triple slash transition into C.
+        tl.fromTo("#s3", { x: -900 }, { x: 1400, duration: 0.32, ease: "power2.inOut", immediateRender: false }, 6.78);
+        tl.fromTo("#s2", { x: -900 }, { x: 1400, duration: 0.32, ease: "power2.inOut", immediateRender: false }, 6.82);
+        tl.fromTo("#s1", { x: -900 }, { x: 1400, duration: 0.32, ease: "power2.inOut", immediateRender: false }, 6.86);
+
+        // ---------- Shot C (7.0 - 13.0) ----------
+        tl.fromTo("#camC", { scale: 1.2, rotation: 2 }, { scale: 1.04, rotation: 0, duration: 0.8, ease: "expo.out" }, 7.0);
+        tl.to("#camC", { scale: 1.12, duration: 3.0, ease: "none" }, 7.8);
+
+        tl.fromTo("#chips div", { opacity: 0, x: 200 }, { opacity: 1, x: 0, duration: 0.3, ease: "expo.out", stagger: 0.12 }, 7.25);
+        tl.to("#chips div", { opacity: 0, x: 100, duration: 0.2, stagger: 0.05 }, 9.4);
+
+        tl.fromTo("#chart", { opacity: 0, y: 80 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 7.3);
+        tl.fromTo("#bars i", { scaleY: 0 }, { scaleY: 1, duration: 0.3, ease: "back.out(1.6)", stagger: 0.09 }, 7.5);
+        tl.to("#trend", { attr: { "stroke-dashoffset": 0 }, duration: 0.9, ease: "power1.inOut" }, 8.5);
+        tl.fromTo("#delta", { opacity: 0, scale: 0.5, rotation: -8 }, { opacity: 1, scale: 1, rotation: -3, duration: 0.35, ease: "back.out(2.4)" }, 8.7);
+        const dl = { n: 0 };
+        tl.fromTo(dl, { n: 0 }, { n: 70, duration: 0.6, ease: "power2.out", immediateRender: false, onUpdate: () => ($("#delta").textContent = "+" + Math.round(dl.n) + " lb") }, 8.7);
+        tl.to("#chart", { opacity: 0, y: 60, duration: 0.2, ease: "power2.in" }, 9.4);
+
+        tl.set("#payoff", { opacity: 1 }, 9.5);
+        tl.fromTo("#p1", { x: -900, skewX: -25 }, { x: 0, skewX: 0, duration: 0.35, ease: "expo.out" }, 9.5);
+        tl.fromTo("#p2", { x: 900, skewX: -25 }, { x: 0, skewX: 0, duration: 0.35, ease: "expo.out" }, 9.68);
+        tl.to("#payoff", { opacity: 0, duration: 0.15 }, 10.2);
+
+        // End card: stacked diagonal blocks, wordmark, chevron CTA.
+        tl.set("#end", { opacity: 1 }, 10.25);
+        tl.fromTo("#end .b1", { yPercent: 100 }, { yPercent: 0, duration: 0.4, ease: "power4.out" }, 10.25);
+        tl.fromTo("#end .b2", { yPercent: 100 }, { yPercent: 0, duration: 0.45, ease: "power4.out" }, 10.33);
+        tl.fromTo("#word span", { opacity: 0, x: -80, skewX: -20 }, { opacity: 1, x: 0, skewX: 0, duration: 0.3, ease: "expo.out", stagger: 0.04 }, 10.55);
+        tl.fromTo("#end .sub", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.3 }, 10.95);
+        tl.fromTo("#end .cta", { opacity: 0, x: -200 }, { opacity: 1, x: 0, duration: 0.4, ease: "expo.out" }, 11.15);
+        tl.fromTo("#end .chev i", { opacity: 0.25 }, { keyframes: [{ opacity: 1, duration: 0.12 }, { opacity: 0.25, duration: 0.2 }], stagger: { each: 0.1, repeat: 2 }, immediateRender: false }, 11.5);
+        tl.fromTo("#end .fine", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 11.5);
+
+        tl.seek(0);
+        window.__timelines["main"] = tl;
+      })();
+    </script>
+  </body>
+</html>

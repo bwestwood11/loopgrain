@@ -1,0 +1,425 @@
+<!doctype html>
+<!-- Auto detailing spot: "Scan mode". Tech HUD language: corner brackets, scan sweep, lock-on
+     tracking, grime donut chart, live magnifier lens, self-ticking checklist, gloss line chart
+     that spikes on the cut, glints, bracketed CTA. -->
+<html lang="en" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="assets/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Space Grotesk"; src: url("assets/fonts/space-grotesk.woff2") format("woff2"); font-weight: 300 700; }
+      @font-face { font-family: "JetBrains Mono"; src: url("assets/fonts/jetbrains-mono.woff2") format("woff2"); font-weight: 100 800; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1920px; overflow: hidden; background: #000; }
+      #root {
+        position: relative; width: 100%; height: 100%; overflow: hidden; background: #000;
+        font-family: "Space Grotesk", sans-serif; color: #fff;
+        --cyan: #3fd0ff; --red: #ff4d5a; --green: #3ef08a; --glass: rgba(5, 10, 16, 0.82);
+      }
+      .mono { font-family: "JetBrains Mono", monospace; }
+      .cam { position: absolute; inset: 0; overflow: hidden; }
+      .cam video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      .shade { position: absolute; left: 0; right: 0; bottom: 0; height: 1000px;
+        background: linear-gradient(to top, rgba(2, 6, 10, 0.88) 25%, rgba(2, 6, 10, 0)); }
+      #grid { position: absolute; inset: 0; opacity: 0;
+        background-image: linear-gradient(rgba(63, 208, 255, 0.16) 2px, transparent 2px),
+          linear-gradient(90deg, rgba(63, 208, 255, 0.16) 2px, transparent 2px);
+        background-size: 90px 90px; }
+      #sweep { position: absolute; left: 0; right: 0; top: 0; height: 260px;
+        background: linear-gradient(to bottom, rgba(63, 208, 255, 0), rgba(63, 208, 255, 0.45) 85%, #bff1ff 100%); }
+      #boot { position: absolute; inset: 0; background: #000; }
+
+      /* HUD chrome */
+      .br { position: absolute; width: 84px; height: 84px; border-color: var(--cyan); border-style: solid; border-width: 0; }
+      #brTL { left: 44px; top: 44px; border-left-width: 7px; border-top-width: 7px; }
+      #brTR { right: 44px; top: 44px; border-right-width: 7px; border-top-width: 7px; }
+      #brBL { left: 44px; bottom: 44px; border-left-width: 7px; border-bottom-width: 7px; }
+      #brBR { right: 44px; bottom: 44px; border-right-width: 7px; border-bottom-width: 7px; }
+      .hud-label { position: absolute; top: 72px; font-size: 28px; font-weight: 700; letter-spacing: 0.08em; }
+      #hudL { left: 150px; color: var(--cyan); }
+      #hudR { right: 150px; display: flex; align-items: center; gap: 14px; color: #fff; }
+      #hudR i { display: block; width: 18px; height: 18px; border-radius: 50%; background: var(--red); }
+
+      /* hook */
+      #hook { position: absolute; left: 70px; top: 1180px; width: 940px; }
+      #hook .l1 { font-size: 176px; font-weight: 700; line-height: 1; letter-spacing: -0.03em; }
+      #hook .l2wrap { position: relative; display: inline-block; margin-top: 18px; }
+      #hook .mark { position: absolute; inset: 0 -20px; background: var(--red); transform-origin: 0 50%; }
+      #hook .l2 { position: relative; display: block; padding: 8px 10px 14px; font-size: 104px; font-weight: 700; letter-spacing: -0.02em; color: #fff; }
+
+      /* lock-on box */
+      #lock { position: absolute; left: 140px; top: 560px; width: 800px; height: 520px; opacity: 0; }
+      #lock .edge { position: absolute; inset: 0; border: 4px dashed rgba(63, 208, 255, 0.85); }
+      #lock .c { position: absolute; width: 60px; height: 60px; border-color: var(--cyan); border-style: solid; border-width: 0; }
+      #lock .c1 { left: -8px; top: -8px; border-left-width: 10px; border-top-width: 10px; }
+      #lock .c2 { right: -8px; top: -8px; border-right-width: 10px; border-top-width: 10px; }
+      #lock .c3 { left: -8px; bottom: -8px; border-left-width: 10px; border-bottom-width: 10px; }
+      #lock .c4 { right: -8px; bottom: -8px; border-right-width: 10px; border-bottom-width: 10px; }
+      #lock .tag { position: absolute; left: -8px; top: -76px; padding: 10px 18px; background: var(--red); font-size: 30px; font-weight: 800; letter-spacing: 0.06em; white-space: nowrap; }
+
+      /* donut chart */
+      #donut { position: absolute; left: 60px; top: 1190px; width: 960px; height: 500px; padding: 40px; opacity: 0;
+        background: var(--glass); border: 3px solid rgba(63, 208, 255, 0.5); display: flex; align-items: center; gap: 50px; }
+      #donut svg { flex: 0 0 380px; }
+      #donut .center { position: absolute; left: 40px; top: 40px; width: 380px; height: 420px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+      #donut .center b { font-size: 92px; font-weight: 700; line-height: 1; }
+      #donut .center small { font-size: 26px; font-weight: 700; letter-spacing: 0.14em; color: var(--cyan); }
+      #donut ul { list-style: none; display: flex; flex-direction: column; gap: 30px; }
+      #donut li { display: grid; grid-template-columns: 28px 1fr; gap: 18px; align-items: center; opacity: 0; }
+      #donut li i { display: block; width: 28px; height: 28px; }
+      #donut li b { display: block; font-size: 60px; font-weight: 700; line-height: 1; }
+      #donut li span { display: block; font-size: 28px; font-weight: 600; color: rgba(255, 255, 255, 0.75); margin-top: 6px; }
+
+      /* glitch */
+      .rgb { position: absolute; inset: 0; mix-blend-mode: screen; opacity: 0; }
+      #rgbR { background: rgba(255, 40, 60, 0.55); }
+      #rgbC { background: rgba(40, 200, 255, 0.55); }
+
+      /* magnifier lens */
+      #lens { position: absolute; left: 520px; top: 250px; width: 480px; height: 480px; opacity: 0; }
+      #lens .glass { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; background: #000; }
+      #lens .inner { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-origin: 0 0; }
+      #lens .inner video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      #lens svg { position: absolute; inset: -30px; width: 540px; height: 540px; }
+      #lens .read { position: absolute; left: 0; right: 0; top: 520px; text-align: center; font-size: 30px; font-weight: 700; letter-spacing: 0.06em; color: var(--cyan); }
+      #leaderSvg { position: absolute; inset: 0; }
+
+      /* checklist */
+      #check { position: absolute; left: 60px; top: 1080px; width: 640px; padding: 40px 44px; opacity: 0;
+        background: var(--glass); border-left: 8px solid var(--cyan); }
+      #check h4 { font-size: 28px; font-weight: 800; letter-spacing: 0.12em; color: var(--cyan); }
+      #check ul { list-style: none; margin-top: 26px; display: flex; flex-direction: column; gap: 20px; }
+      #check li { display: flex; align-items: center; gap: 24px; font-size: 50px; font-weight: 600; }
+      #check li svg { flex: 0 0 52px; }
+      #check .bar { margin-top: 30px; height: 12px; background: rgba(255, 255, 255, 0.15); }
+      #check .bar i { display: block; height: 100%; background: var(--green); transform-origin: 0 50%; }
+      #check .count { margin-top: 14px; font-size: 28px; font-weight: 700; color: var(--green); }
+
+      #score { position: absolute; right: 60px; top: 1120px; width: 280px; padding: 26px 30px; opacity: 0; display: flex; flex-direction: column; align-items: center; gap: 12px;
+        background: var(--glass); border: 3px solid var(--cyan); text-align: center; }
+      #score small { display: block; font-size: 24px; font-weight: 700; letter-spacing: 0.12em; color: var(--cyan); }
+      #score b { display: block; font-size: 110px; font-weight: 700; line-height: 1.25; }
+      #score span { display: block; font-size: 26px; font-weight: 600; color: rgba(255, 255, 255, 0.8); }
+
+      #gloss { position: absolute; top: -200px; bottom: -200px; left: 0; width: 520px; opacity: 0;
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.85) 50%, rgba(255, 255, 255, 0)); }
+
+      /* gloss line chart */
+      #chart { position: absolute; left: 60px; top: 1160px; width: 960px; height: 560px; padding: 36px 40px; opacity: 0;
+        background: var(--glass); border: 3px solid rgba(63, 208, 255, 0.5); }
+      #chart .head { display: flex; justify-content: space-between; align-items: baseline; }
+      #chart .head small { font-size: 28px; font-weight: 800; letter-spacing: 0.12em; color: var(--cyan); }
+      #chart .head b { font-size: 84px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+      #chart svg { position: absolute; left: 40px; top: 150px; }
+      #chart .status { position: absolute; left: 40px; bottom: 30px; font-size: 28px; font-weight: 700; color: var(--green); white-space: nowrap; }
+
+      .glint { position: absolute; width: 120px; height: 120px; opacity: 0; }
+
+      /* end card */
+      #end { position: absolute; left: 0; right: 0; bottom: 0; height: 1000px; opacity: 0; }
+      #end .bg { position: absolute; inset: 0; background: rgba(3, 7, 12, 0.94); border-top: 6px solid var(--cyan); }
+      #end .inner { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; }
+      #end .word { font-size: 176px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; white-space: nowrap; }
+      #end .word span { display: inline-block; opacity: 0; }
+      #end .word .c { color: var(--cyan); }
+      #end .under { width: 780px; height: 8px; background: var(--cyan); transform-origin: 0 50%; }
+      #end .sub { font-size: 32px; font-weight: 700; letter-spacing: 0.1em; color: rgba(255, 255, 255, 0.8); opacity: 0; white-space: nowrap; }
+      #end .ctaWrap { position: relative; margin-top: 44px; padding: 26px; }
+      #end .cta { padding: 30px 70px; background: var(--cyan); color: #04121a; font-size: 64px; font-weight: 700; letter-spacing: 0.02em; opacity: 0; white-space: nowrap; }
+      #end .cb { position: absolute; width: 50px; height: 50px; border-color: #fff; border-style: solid; border-width: 0; }
+      #end .cb1 { left: 0; top: 0; border-left-width: 6px; border-top-width: 6px; }
+      #end .cb2 { right: 0; top: 0; border-right-width: 6px; border-top-width: 6px; }
+      #end .cb3 { left: 0; bottom: 0; border-left-width: 6px; border-bottom-width: 6px; }
+      #end .cb4 { right: 0; bottom: 0; border-right-width: 6px; border-bottom-width: 6px; }
+      #end .fine { font-size: 30px; font-weight: 600; color: rgba(255, 255, 255, 0.7); opacity: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="13" data-width="1080" data-height="1920">
+      <div id="camA" class="cam">
+        <video id="vidA" class="clip" src="assets/segA.mp4" data-start="0" data-duration="3.5" data-track-index="0" data-color-grading="{&quot;preset&quot;:&quot;deep-contrast&quot;,&quot;intensity&quot;:0.55,&quot;adjust&quot;:{&quot;temperature&quot;:-0.04,&quot;vibrance&quot;:0.08},&quot;details&quot;:{&quot;vignette&quot;:0.2}}" muted playsinline></video>
+      </div>
+      <div id="camB" class="cam">
+        <video id="vidB" class="clip" src="assets/segB.mp4" data-start="3.5" data-duration="3.5" data-track-index="0" data-color-grading="{&quot;preset&quot;:&quot;deep-contrast&quot;,&quot;intensity&quot;:0.55,&quot;adjust&quot;:{&quot;temperature&quot;:-0.04,&quot;vibrance&quot;:0.08},&quot;details&quot;:{&quot;vignette&quot;:0.2}}" muted playsinline></video>
+      </div>
+      <div id="camC" class="cam">
+        <video id="vidC" class="clip" src="assets/segC.mp4" data-start="7" data-duration="6" data-track-index="0" data-color-grading="{&quot;preset&quot;:&quot;deep-contrast&quot;,&quot;intensity&quot;:0.55,&quot;adjust&quot;:{&quot;temperature&quot;:-0.04,&quot;vibrance&quot;:0.08},&quot;details&quot;:{&quot;vignette&quot;:0.2}}" muted playsinline></video>
+      </div>
+      <div id="grid"></div>
+      <div class="shade"></div>
+
+      <!-- Shot A -->
+      <div id="lock" data-layout-allow-overlap>
+        <div class="edge"></div>
+        <i class="c c1"></i><i class="c c2"></i><i class="c c3"></i><i class="c c4"></i>
+        <div class="tag mono">TARGET LOCKED: FLOOR MAT</div>
+      </div>
+
+      <div id="hook">
+        <div class="l1">SIX MONTHS</div>
+        <div class="l2wrap"><i class="mark"></i><span class="l2">OF ROAD GRIME</span></div>
+      </div>
+
+      <div id="donut">
+        <svg viewBox="0 0 380 380" width="380" height="380" aria-hidden="true">
+          <circle cx="190" cy="190" r="150" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="56" />
+          <circle class="seg" data-v="0.38" data-o="0" cx="190" cy="190" r="150" fill="none" stroke="#3fd0ff" stroke-width="56" transform="rotate(-90 190 190)" />
+          <circle class="seg" data-v="0.27" data-o="0.38" cx="190" cy="190" r="150" fill="none" stroke="#ffffff" stroke-width="56" transform="rotate(-90 190 190)" />
+          <circle class="seg" data-v="0.35" data-o="0.65" cx="190" cy="190" r="150" fill="none" stroke="#ff4d5a" stroke-width="56" transform="rotate(-90 190 190)" />
+        </svg>
+        <div class="center"><b id="grimePct">0%</b><small class="mono">GRIME LOAD</small></div>
+        <ul>
+          <li><i style="background: #3fd0ff"></i><div><b>38%</b><span>Road salt</span></div></li>
+          <li><i style="background: #ffffff"></i><div><b>27%</b><span>Brake dust</span></div></li>
+          <li><i style="background: #ff4d5a"></i><div><b>35%</b><span>Mud and clay</span></div></li>
+        </ul>
+      </div>
+
+      <!-- Shot B -->
+      <svg id="leaderSvg" viewBox="0 0 1080 1920" width="1080" height="1920" aria-hidden="true">
+        <line id="leader" x1="600" y1="690" x2="480" y2="1130" stroke="#3fd0ff" stroke-width="5" stroke-dasharray="460" stroke-dashoffset="460" />
+        <circle id="target" cx="480" cy="1130" r="26" fill="none" stroke="#3fd0ff" stroke-width="6" opacity="0" />
+      </svg>
+      <div id="lens">
+        <div class="glass">
+          <div class="inner" id="lensInner">
+            <video id="vidLens" class="clip" src="assets/segB.mp4" data-start="3.7" data-duration="1.7" data-media-start="0.2" data-track-index="1" data-color-grading="{&quot;preset&quot;:&quot;deep-contrast&quot;,&quot;intensity&quot;:0.55,&quot;adjust&quot;:{&quot;temperature&quot;:-0.04,&quot;vibrance&quot;:0.08},&quot;details&quot;:{&quot;vignette&quot;:0.2}}" muted playsinline></video>
+          </div>
+        </div>
+        <svg viewBox="0 0 540 540" aria-hidden="true">
+          <circle cx="270" cy="270" r="244" fill="none" stroke="#3fd0ff" stroke-width="10" />
+          <circle id="lensRing" cx="270" cy="270" r="262" fill="none" stroke="rgba(63,208,255,0.6)" stroke-width="4" stroke-dasharray="14 14" />
+          <line x1="270" y1="30" x2="270" y2="90" stroke="#3fd0ff" stroke-width="5" />
+          <line x1="270" y1="450" x2="270" y2="510" stroke="#3fd0ff" stroke-width="5" />
+          <line x1="30" y1="270" x2="90" y2="270" stroke="#3fd0ff" stroke-width="5" />
+          <line x1="450" y1="270" x2="510" y2="270" stroke="#3fd0ff" stroke-width="5" />
+        </svg>
+        <div class="read mono">MAGNIFY 2.6X // GRILLE</div>
+      </div>
+
+      <div id="check">
+        <h4 class="mono">DETAIL CHECKLIST</h4>
+        <ul>
+          <li><svg viewBox="0 0 52 52" width="52" height="52"><rect x="3" y="3" width="46" height="46" fill="none" stroke="#3fd0ff" stroke-width="5" /><path class="tick" d="M13 27 L22 36 L40 16" fill="none" stroke="#3ef08a" stroke-width="7" stroke-linecap="round" stroke-dasharray="40" stroke-dashoffset="40" /></svg>Grille</li>
+          <li><svg viewBox="0 0 52 52" width="52" height="52"><rect x="3" y="3" width="46" height="46" fill="none" stroke="#3fd0ff" stroke-width="5" /><path class="tick" d="M13 27 L22 36 L40 16" fill="none" stroke="#3ef08a" stroke-width="7" stroke-linecap="round" stroke-dasharray="40" stroke-dashoffset="40" /></svg>Emblems</li>
+          <li><svg viewBox="0 0 52 52" width="52" height="52"><rect x="3" y="3" width="46" height="46" fill="none" stroke="#3fd0ff" stroke-width="5" /><path class="tick" d="M13 27 L22 36 L40 16" fill="none" stroke="#3ef08a" stroke-width="7" stroke-linecap="round" stroke-dasharray="40" stroke-dashoffset="40" /></svg>Wheel wells</li>
+          <li><svg viewBox="0 0 52 52" width="52" height="52"><rect x="3" y="3" width="46" height="46" fill="none" stroke="#3fd0ff" stroke-width="5" /><path class="tick" d="M13 27 L22 36 L40 16" fill="none" stroke="#3ef08a" stroke-width="7" stroke-linecap="round" stroke-dasharray="40" stroke-dashoffset="40" /></svg>Door jambs</li>
+        </ul>
+        <div class="bar"><i id="checkBar"></i></div>
+        <div class="count mono" id="checkCount">0 / 4 COMPLETE</div>
+      </div>
+
+      <div id="score">
+        <small class="mono">CLIENT SCORE</small>
+        <b>5.0</b>
+        <span><span id="jobs">0</span> reviews</span>
+      </div>
+
+      <!-- Shot C -->
+      <div id="chart">
+        <div class="head"><small class="mono">GLOSS LEVEL</small><b id="glossVal">12%</b></div>
+        <svg viewBox="0 0 880 300" width="880" height="300" aria-hidden="true">
+          <defs>
+            <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#3fd0ff" stop-opacity="0.55" />
+              <stop offset="1" stop-color="#3fd0ff" stop-opacity="0" />
+            </linearGradient>
+            <clipPath id="areaClip"><rect id="areaRect" x="0" y="0" width="0" height="300" /></clipPath>
+          </defs>
+          <g stroke="rgba(255,255,255,0.14)" stroke-width="2">
+            <line x1="0" y1="30" x2="880" y2="30" /><line x1="0" y1="120" x2="880" y2="120" />
+            <line x1="0" y1="210" x2="880" y2="210" /><line x1="0" y1="298" x2="880" y2="298" />
+          </g>
+          <path id="area" clip-path="url(#areaClip)" fill="url(#areaGrad)" />
+          <path id="line" fill="none" stroke="#3fd0ff" stroke-width="8" stroke-linejoin="round" stroke-linecap="round" />
+          <circle id="tip" r="14" fill="#fff" stroke="#3fd0ff" stroke-width="6" />
+        </svg>
+        <div class="status mono" id="status"></div>
+      </div>
+
+      <svg class="glint" id="g1" style="left: 180px; top: 330px" viewBox="0 0 120 120" aria-hidden="true"><path d="M60 0 L68 52 L120 60 L68 68 L60 120 L52 68 L0 60 L52 52 Z" fill="#fff" /></svg>
+      <svg class="glint" id="g2" style="left: 610px; top: 190px" viewBox="0 0 120 120" aria-hidden="true"><path d="M60 0 L68 52 L120 60 L68 68 L60 120 L52 68 L0 60 L52 52 Z" fill="#fff" /></svg>
+      <svg class="glint" id="g3" style="left: 820px; top: 520px" viewBox="0 0 120 120" aria-hidden="true"><path d="M60 0 L68 52 L120 60 L68 68 L60 120 L52 68 L0 60 L52 52 Z" fill="#fff" /></svg>
+      <svg class="glint" id="g4" style="left: 400px; top: 640px" viewBox="0 0 120 120" aria-hidden="true"><path d="M60 0 L68 52 L120 60 L68 68 L60 120 L52 68 L0 60 L52 52 Z" fill="#fff" /></svg>
+
+      <div id="end">
+        <div class="bg"></div>
+        <div class="inner">
+          <div class="word" id="word"></div>
+          <div class="under"></div>
+          <div class="sub mono">MOBILE DETAILING // WE COME TO YOU</div>
+          <div class="ctaWrap">
+            <i class="cb cb1"></i><i class="cb cb2"></i><i class="cb cb3"></i><i class="cb cb4"></i>
+            <div class="cta">BOOK A DETAIL</div>
+          </div>
+          <div class="fine">Link in bio.</div>
+        </div>
+      </div>
+
+      <!-- HUD chrome on top -->
+      <div id="sweep"></div>
+      <i id="brTL" class="br"></i><i id="brTR" class="br"></i><i id="brBL" class="br"></i><i id="brBR" class="br"></i>
+      <div id="hudL" class="hud-label mono">GLOSS BOSS // SCAN MODE</div>
+      <div id="hudR" class="hud-label mono"><i></i><span id="tc">00:00:00</span></div>
+      <div id="gloss"></div>
+      <div id="rgbR" class="rgb"></div>
+      <div id="rgbC" class="rgb"></div>
+      <div id="boot"></div>
+    </div>
+
+    <script>
+      (function () {
+        const tl = gsap.timeline({ paused: true });
+        const $ = (s) => document.querySelector(s);
+
+        // ---- static setup ----
+        const R = 150, CIRC = 2 * Math.PI * R;
+        document.querySelectorAll("#donut .seg").forEach((c) => {
+          const v = +c.dataset.v, o = +c.dataset.o;
+          c.setAttribute("stroke-dasharray", `0 ${CIRC}`);
+          c.setAttribute("transform", `rotate(${-90 + o * 360} 190 190)`);
+          c._len = v * CIRC;
+        });
+
+        // Gloss line: low and noisy through the foam, spikes where the cut lands on the wipe.
+        const W = 880, H = 300;
+        const pts = [[0, 12], [0.08, 15], [0.16, 11], [0.24, 17], [0.32, 14], [0.4, 19], [0.48, 16], [0.52, 22], [0.56, 70], [0.62, 84], [0.72, 88], [0.84, 93], [1, 96]];
+        const xy = pts.map(([x, v]) => [x * W, H - (v / 100) * (H - 20) - 4]);
+        const d = "M" + xy.map((p) => p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" L");
+        $("#line").setAttribute("d", d);
+        $("#area").setAttribute("d", d + ` L${W} ${H} L0 ${H} Z`);
+        const lineLen = $("#line").getTotalLength();
+        $("#line").setAttribute("stroke-dasharray", lineLen);
+        $("#line").setAttribute("stroke-dashoffset", lineLen);
+
+        // Wordmark letters.
+        $("#word").innerHTML = [..."GLOSS"].map((c) => `<span>${c}</span>`).join("") + "<span>&nbsp;</span>" + [..."BOSS"].map((c) => `<span class="c">${c}</span>`).join("");
+
+        // Magnifier: center the brush point (486, 1152) of the frame inside the 480px lens.
+        const Z = 2.6;
+        gsap.set("#lensInner", { scale: Z, x: 240 - 486 * Z, y: 240 - 1152 * Z });
+
+        gsap.set(["#hook", "#donut", "#lock", "#check", "#score", "#chart", "#end", "#lens"], { opacity: 0 });
+
+        // ---- running HUD timecode (seconds:frames) ----
+        const tcEl = $("#tc"), tcP = { t: 0 };
+        tl.fromTo(tcP, { t: 0 }, { t: 13, duration: 13, ease: "none", onUpdate: () => {
+          const s = Math.floor(tcP.t), f = Math.floor((tcP.t % 1) * 30);
+          tcEl.textContent = "00:00:" + String(s).padStart(2, "0") + ":" + String(f).padStart(2, "0");
+        } }, 0);
+
+        // ---------- Boot + scan (0 - 1.0) ----------
+        tl.to("#boot", { keyframes: [{ opacity: 0.2, duration: 0.05 }, { opacity: 0.9, duration: 0.05 }, { opacity: 0.1, duration: 0.05 }, { opacity: 0.7, duration: 0.04 }, { opacity: 0, duration: 0.08 }] }, 0);
+        tl.fromTo("#sweep", { y: -300 }, { y: 1950, duration: 0.8, ease: "power1.inOut" }, 0.15);
+        tl.fromTo("#grid", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 0.3);
+        tl.to("#grid", { opacity: 0.35, duration: 0.6 }, 1.0);
+        tl.fromTo(["#brTL", "#brTR", "#brBL", "#brBR"], { scale: 1.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: "back.out(2)", stagger: 0.05 }, 0.2);
+        tl.fromTo(["#hudL", "#hudR"], { opacity: 0 }, { opacity: 1, duration: 0.2 }, 0.45);
+        tl.fromTo("#camA", { scale: 1.25 }, { scale: 1.08, duration: 3.4, ease: "power1.out" }, 0);
+
+        // Hook: headline slides up, red marker wipes, second line lands on it.
+        tl.set("#hook", { opacity: 1 }, 0.5);
+        tl.fromTo("#hook .l1", { y: 120, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power4.out" }, 0.5);
+        tl.fromTo("#hook .mark", { scaleX: 0 }, { scaleX: 1, duration: 0.3, ease: "power3.inOut" }, 0.8);
+        tl.fromTo("#hook .l2", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.25, ease: "power3.out" }, 0.98);
+        tl.to("#hook", { opacity: 0, y: -40, duration: 0.2, ease: "power2.in" }, 1.72);
+
+        // Lock-on box, then the grime donut.
+        tl.fromTo("#lock", { opacity: 0, scale: 1.35 }, { opacity: 1, scale: 1, duration: 0.35, ease: "expo.out" }, 1.75);
+        tl.fromTo("#lock .tag", { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 0.3, ease: "steps(12)" }, 1.95);
+        tl.to("#lock", { keyframes: [{ opacity: 0.4, duration: 0.05 }, { opacity: 1, duration: 0.05 }, { opacity: 0.4, duration: 0.05 }, { opacity: 1, duration: 0.05 }] }, 2.25);
+        tl.fromTo("#donut", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 1.95);
+        document.querySelectorAll("#donut .seg").forEach((c, i) => {
+          const p = { v: 0 };
+          tl.fromTo(p, { v: 0 }, { v: c._len, duration: 0.35, ease: "power2.out", immediateRender: false,
+            onUpdate: () => c.setAttribute("stroke-dasharray", `${p.v} ${CIRC}`) }, 2.1 + i * 0.28);
+        });
+        tl.fromTo("#donut li", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.25, ease: "power3.out", stagger: 0.28 }, 2.15);
+        const gp = { v: 0 };
+        tl.fromTo(gp, { v: 0 }, { v: 100, duration: 0.9, ease: "power1.inOut", immediateRender: false, onUpdate: () => ($("#grimePct").textContent = Math.round(gp.v) + "%") }, 2.1);
+
+        // Glitch out of A.
+        tl.to("#camA", { keyframes: [{ x: -40, duration: 0.03 }, { x: 30, duration: 0.03 }, { x: -18, duration: 0.03 }, { x: 0, duration: 0.03 }] }, 3.3);
+        tl.to("#camA", { keyframes: [{ clipPath: "inset(12% 0 60% 0)", duration: 0.04 }, { clipPath: "inset(48% 0 20% 0)", duration: 0.04 }, { clipPath: "inset(0% 0 0% 0)", duration: 0.04 }] }, 3.34);
+        tl.to("#rgbR", { keyframes: [{ opacity: 1, x: -16, duration: 0.04 }, { opacity: 0, x: 0, duration: 0.08 }] }, 3.38);
+        tl.to("#rgbC", { keyframes: [{ opacity: 1, x: 16, duration: 0.04 }, { opacity: 0, x: 0, duration: 0.08 }] }, 3.44);
+        tl.to(["#donut", "#lock"], { opacity: 0, duration: 0.1 }, 3.35);
+        tl.to("#grid", { opacity: 0, duration: 0.2 }, 3.35);
+
+        // ---------- Shot B (3.5 - 7.0): magnifier, checklist, score ----------
+        tl.to("#rgbC", { keyframes: [{ opacity: 0.8, duration: 0.04 }, { opacity: 0, duration: 0.1 }] }, 3.5);
+        tl.set("#lens", { opacity: 1 }, 3.7);
+        tl.fromTo("#lens .glass", { clipPath: "circle(0% at 50% 50%)" }, { clipPath: "circle(50% at 50% 50%)", duration: 0.45, ease: "expo.out" }, 3.7);
+        tl.fromTo("#lens svg", { scale: 0.4, rotation: -90, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.5, ease: "back.out(1.6)" }, 3.7);
+        tl.fromTo("#lensRing", { rotation: 0, transformOrigin: "50% 50%" }, { rotation: 90, duration: 1.6, ease: "none" }, 3.7);
+        tl.fromTo("#lens .read", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 4.0);
+        tl.to("#leader", { attr: { "stroke-dashoffset": 0 }, duration: 0.3, ease: "power2.out" }, 3.9);
+        tl.to("#target", { attr: { opacity: 1 }, duration: 0.15 }, 4.15);
+        tl.fromTo("#lensInner", { scale: Z }, { scale: Z * 1.08, x: 240 - 486 * Z * 1.08, y: 240 - 1152 * Z * 1.08, duration: 1.3, ease: "none" }, 3.9);
+        tl.to(["#lens", "#leader", "#target"], { opacity: 0, duration: 0.2 }, 5.2);
+
+        tl.to("#camB", { scale: 1.12, duration: 1.6, ease: "power1.inOut" }, 5.2);
+
+        tl.fromTo("#check", { opacity: 0, x: -80 }, { opacity: 1, x: 0, duration: 0.35, ease: "power3.out" }, 5.25);
+        tl.to("#check .tick", { attr: { "stroke-dashoffset": 0 }, duration: 0.18, ease: "power2.out", stagger: 0.22 }, 5.55);
+        tl.fromTo("#checkBar", { scaleX: 0 }, { scaleX: 1, duration: 0.88, ease: "none" }, 5.55);
+        const ck = { n: 0 };
+        tl.fromTo(ck, { n: 0 }, { n: 4, duration: 0.88, ease: "none", immediateRender: false, onUpdate: () => ($("#checkCount").textContent = Math.min(4, Math.floor(ck.n + 0.2)) + " / 4 COMPLETE") }, 5.55);
+        tl.fromTo("#score", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.35, ease: "back.out(2)" }, 5.45);
+        const jb = { n: 0 };
+        tl.fromTo(jb, { n: 0 }, { n: 208, duration: 0.8, ease: "power2.out", immediateRender: false, onUpdate: () => ($("#jobs").textContent = Math.round(jb.n)) }, 5.5);
+        tl.to(["#check", "#score"], { opacity: 0, duration: 0.15 }, 6.7);
+
+        // Gloss light-sweep across the cut.
+        tl.fromTo("#gloss", { x: -700, opacity: 1, skewX: -18 }, { x: 1300, opacity: 1, skewX: -18, duration: 0.4, ease: "power2.inOut" }, 6.8);
+        tl.set("#gloss", { opacity: 0 }, 7.2);
+
+        // ---------- Shot C (7.0 - 13.0): gloss chart, glints, end ----------
+        tl.fromTo("#camC", { scale: 1.12 }, { scale: 1.02, duration: 1.5, ease: "power2.out" }, 7.0);
+        tl.fromTo("#camC", { scale: 1.1 }, { scale: 1.02, duration: 0.6, ease: "expo.out", immediateRender: false }, 8.6);
+        tl.to("#camC", { scale: 1.08, duration: 2.6, ease: "none" }, 9.2);
+
+        tl.fromTo("#chart", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 7.2);
+        const prog = { p: 0 };
+        const tip = $("#tip"), line = $("#line"), rect = $("#areaRect"), gv = $("#glossVal");
+        const drawTo = () => {
+          const L = prog.p * lineLen;
+          line.setAttribute("stroke-dashoffset", lineLen - L);
+          const pt = line.getPointAtLength(Math.max(0.01, L));
+          tip.setAttribute("cx", pt.x);
+          tip.setAttribute("cy", pt.y);
+          rect.setAttribute("width", pt.x);
+          gv.textContent = Math.round(((H - 4 - pt.y) / (H - 20)) * 100) + "%";
+        };
+        drawTo();
+        tl.fromTo(prog, { p: 0 }, { p: 1, duration: 2.5, ease: "none", onUpdate: drawTo }, 7.3);
+        const statusText = "CONTAMINANTS 0%  //  STATUS: SHOWROOM READY";
+        const st = { n: 0 };
+        tl.fromTo(st, { n: 0 }, { n: statusText.length, duration: 0.7, ease: "none", immediateRender: false, onUpdate: () => ($("#status").textContent = statusText.slice(0, Math.round(st.n))) }, 9.3);
+
+        ["#g1", "#g2", "#g3", "#g4"].forEach((g, i) => {
+          tl.fromTo(g, { opacity: 0, scale: 0, rotation: -45 }, { keyframes: [{ opacity: 1, scale: 1.1, rotation: 0, duration: 0.18 }, { opacity: 0, scale: 0.2, rotation: 45, duration: 0.3 }] }, 8.75 + i * 0.22);
+        });
+        tl.to("#chart", { opacity: 0, y: 40, duration: 0.2 }, 10.1);
+
+        // End card: panel rises, word types in, CTA brackets close on the button.
+        tl.set("#end", { opacity: 1 }, 10.25);
+        tl.fromTo("#end .bg", { clipPath: "inset(100% 0 0 0)" }, { clipPath: "inset(0% 0 0 0)", duration: 0.4, ease: "power4.out" }, 10.25);
+        tl.fromTo("#word span", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.2, ease: "power2.out", stagger: 0.05 }, 10.45);
+        tl.fromTo("#end .under", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power3.inOut" }, 10.8);
+        tl.fromTo("#end .sub", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 11.0);
+        tl.fromTo("#end .cb1", { x: -80, y: -60 }, { x: 0, y: 0, duration: 0.4, ease: "expo.out" }, 11.2);
+        tl.fromTo("#end .cb2", { x: 80, y: -60 }, { x: 0, y: 0, duration: 0.4, ease: "expo.out" }, 11.2);
+        tl.fromTo("#end .cb3", { x: -80, y: 60 }, { x: 0, y: 0, duration: 0.4, ease: "expo.out" }, 11.2);
+        tl.fromTo("#end .cb4", { x: 80, y: 60 }, { x: 0, y: 0, duration: 0.4, ease: "expo.out" }, 11.2);
+        tl.fromTo("#end .cta", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)" }, 11.35);
+        tl.to("#end .cta", { keyframes: [{ scale: 0.94, duration: 0.1 }, { scale: 1.03, duration: 0.14 }, { scale: 1, duration: 0.12 }] }, 12.1);
+        tl.fromTo("#end .fine", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 11.6);
+
+        tl.seek(0);
+        window.__timelines["main"] = tl;
+      })();
+    </script>
+  </body>
+</html>

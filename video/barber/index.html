@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<!-- Barbershop spot: "The Saturday Cut". Editorial magazine language: serif type, letterbox,
+     chapter cards, a fade diagram, split-screen detail, pull quote, timer ring, cover end card. -->
+<html lang="en" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1080, height=1920">
+    <script src="assets/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Fraunces"; src: url("assets/fonts/fraunces.woff2") format("woff2"); font-weight: 300 900; font-style: normal; }
+      @font-face { font-family: "Fraunces"; src: url("assets/fonts/fraunces-italic.woff2") format("woff2"); font-weight: 300 900; font-style: italic; }
+      @font-face { font-family: "Inter"; src: url("assets/fonts/inter.woff2") format("woff2"); font-weight: 100 900; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1920px; overflow: hidden; background: #000; }
+      #root {
+        position: relative; width: 100%; height: 100%; overflow: hidden; background: #000;
+        font-family: "Inter", sans-serif;
+        --cream: #f3ebdd; --ink: #141210; --gold: #c9a24b;
+      }
+      .serif { font-family: "Fraunces", serif; font-variation-settings: "opsz" 144; }
+      .cam { position: absolute; inset: 0; overflow: hidden; }
+      .cam .mv { position: absolute; inset: 0; }
+      .cam video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      .shade { position: absolute; left: 0; right: 0; bottom: 0; height: 1000px;
+        background: linear-gradient(to top, rgba(10, 8, 6, 0.85) 20%, rgba(10, 8, 6, 0)); }
+
+      /* letterbox */
+      .bar { position: absolute; left: 0; right: 0; height: 150px; background: var(--ink); display: flex;
+        align-items: center; justify-content: space-between; padding: 0 56px; color: var(--cream); }
+      #barTop { top: 0; }
+      #barBot { bottom: 0; }
+      .bar .mast { font-family: "Fraunces", serif; font-size: 44px; font-weight: 700; letter-spacing: 0.08em; }
+      .bar .meta { font-size: 28px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); }
+      .bar .tc { font-size: 34px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: 0.06em; }
+      .bar .rec { display: flex; align-items: center; gap: 16px; font-size: 28px; font-weight: 600;
+        letter-spacing: 0.18em; text-transform: uppercase; color: rgba(243, 235, 221, 0.7); }
+      .bar .rec i { display: block; width: 16px; height: 16px; border-radius: 50%; background: #d8442e; }
+
+      /* chapter cards */
+      .chapter { position: absolute; inset: 0; background: var(--cream); color: var(--ink);
+        display: flex; flex-direction: column; justify-content: center; padding: 0 90px; }
+      .chapter .num { font-family: "Fraunces", serif; font-style: italic; font-size: 120px; color: var(--gold); line-height: 1; }
+      .chapter .name { font-family: "Fraunces", serif; font-size: 170px; font-weight: 600; line-height: 1; margin-top: 10px; }
+
+      /* title */
+      #title { position: absolute; left: 80px; top: 1080px; width: 920px; }
+      .mask { overflow: hidden; }
+      .mask > span { display: block; }
+      #title .t1 { font-size: 96px; font-style: italic; color: var(--gold); line-height: 1.15; }
+      #title .t2 { font-size: 200px; font-weight: 700; color: var(--cream); line-height: 1.02; }
+      #title .t3 { font-size: 200px; font-style: italic; font-weight: 400; color: var(--cream); line-height: 1.05; }
+
+      /* fade diagram */
+      #fade { position: absolute; left: 380px; top: 1100px; width: 640px; padding: 44px 48px 40px;
+        background: var(--cream); color: var(--ink); border-radius: 6px; }
+      #fade h3 { font-family: "Fraunces", serif; font-style: italic; font-weight: 500; font-size: 64px; line-height: 1; }
+      #fade p { font-size: 28px; font-weight: 600; color: #6b5d45; margin-top: 10px; }
+      #fade .rows { margin-top: 30px; display: flex; flex-direction: column; gap: 16px; }
+      #fade .row { display: grid; grid-template-columns: 72px 1fr; align-items: center; gap: 18px; }
+      #fade .row b { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; }
+      #fade .track { height: 34px; }
+      #fade .fill { display: block; height: 100%; background: var(--ink); transform-origin: 0 50%; border-radius: 2px; }
+      #fade .row:last-child .fill { background: var(--gold); }
+
+      /* split screen */
+      #divider { position: absolute; left: 0; right: 0; top: 957px; height: 6px; background: var(--gold); transform-origin: 50% 50%; }
+      .panel-tag { position: absolute; left: 56px; padding: 10px 20px; background: var(--cream); color: var(--ink);
+        font-size: 28px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0; }
+      #tagTop { top: 190px; }
+      #tagBot { top: 1000px; }
+
+      /* pull quote */
+      #quoteScrim { position: absolute; left: 0; right: 0; bottom: 0; height: 1150px; opacity: 0;
+        background: linear-gradient(to top, rgba(12, 10, 8, 0.94) 55%, rgba(12, 10, 8, 0)); }
+      #quote { position: absolute; left: 80px; top: 1080px; width: 920px; color: var(--cream); }
+      #quote .mark { font-family: "Fraunces", serif; font-size: 300px; line-height: 0.6; color: var(--gold); height: 150px; display: block; }
+      #quote .words { font-family: "Fraunces", serif; font-style: italic; font-size: 118px; line-height: 1.08; font-weight: 400; }
+      #quote .words span { display: inline-block; margin-right: 0.22em; opacity: 0; }
+      #quote .by { margin-top: 36px; font-size: 34px; font-weight: 700; letter-spacing: 0.04em; opacity: 0; }
+      #quote .by em { font-style: normal; color: var(--gold); }
+
+      /* timer ring */
+      #timer { position: absolute; left: 740px; top: 200px; width: 280px; height: 280px; opacity: 0; }
+      #timer svg { position: absolute; inset: 0; }
+      #timer .val { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--cream); }
+      #timer .val b { font-family: "Fraunces", serif; font-size: 110px; font-weight: 700; line-height: 0.9; font-variant-numeric: tabular-nums; }
+      #timer .val small { font-size: 26px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
+
+      /* strike and replace */
+      #payoff { position: absolute; left: 80px; top: 1130px; width: 920px; color: var(--cream); }
+      #payoff .l1 { font-size: 170px; font-weight: 700; line-height: 1.05; }
+      #payoff .swap { position: relative; height: 190px; }
+      #payoff .swap span { position: absolute; left: 0; top: 0; font-size: 170px; font-style: italic; line-height: 1.05; }
+      #payoff .old { color: rgba(243, 235, 221, 0.75); }
+      #payoff .new { color: var(--gold); opacity: 0; }
+      #payoff .strike { position: absolute; left: 0; top: 98px; width: 400px; height: 12px; background: #d8442e; transform-origin: 0 50%; }
+      #payoff .l3 { margin-top: 26px; font-size: 38px; font-weight: 600; letter-spacing: 0.02em; color: rgba(243, 235, 221, 0.85); opacity: 0; }
+
+      /* cover end card */
+      #cover { position: absolute; inset: 0; }
+      .frame { position: absolute; background: var(--cream); }
+      #cover .sheet { position: absolute; left: 0; right: 0; top: 820px; bottom: 0; background: var(--cream);
+        color: var(--ink); padding: 60px 70px 0; }
+      #cover .masthead { font-family: "Fraunces", serif; font-size: 164px; font-weight: 800; line-height: 0.9; letter-spacing: -0.01em; white-space: nowrap; }
+      #cover .masthead span { display: inline-block; }
+      #cover .rule { height: 4px; background: var(--ink); margin-top: 26px; transform-origin: 0 50%; }
+      #cover .dateline { display: flex; justify-content: space-between; margin-top: 18px; font-size: 28px; font-weight: 700;
+        letter-spacing: 0.16em; text-transform: uppercase; color: #6b5d45; }
+      #cover .head { margin-top: 70px; font-family: "Fraunces", serif; font-style: italic; font-size: 104px; line-height: 1.02; font-weight: 400; }
+      #cover .cta { display: inline-block; margin-top: 56px; padding: 30px 60px; background: var(--ink); color: var(--cream);
+        font-size: 44px; font-weight: 800; letter-spacing: 0.04em; border-radius: 999px; }
+      #cover .fine { margin-top: 30px; font-size: 32px; font-weight: 600; color: #6b5d45; }
+
+      #progress { position: absolute; left: 0; bottom: 0; width: 100%; height: 8px; background: var(--gold); transform-origin: 0 50%; }
+    </style>
+  </head>
+  <body>
+    <div data-hf-id="hf-frlg" id="root" data-composition-id="main" data-start="0" data-duration="13" data-width="1080" data-height="1920">
+      <div data-hf-id="hf-mzod" id="camA" class="cam">
+        <video data-color-grading="{&quot;preset&quot;:&quot;skin-soft&quot;,&quot;intensity&quot;:0.6,&quot;adjust&quot;:{&quot;exposure&quot;:0.04,&quot;contrast&quot;:0.1,&quot;highlights&quot;:-0.12,&quot;shadows&quot;:0.12,&quot;whites&quot;:0,&quot;blacks&quot;:0,&quot;temperature&quot;:0.08,&quot;tint&quot;:0.02,&quot;vibrance&quot;:0,&quot;saturation&quot;:-0.06},&quot;details&quot;:{&quot;vignette&quot;:0.22,&quot;vignetteMidpoint&quot;:0.5,&quot;vignetteRoundness&quot;:0,&quot;vignetteFeather&quot;:0.65,&quot;grain&quot;:0.18,&quot;grainSize&quot;:0.25,&quot;grainRoughness&quot;:0.5},&quot;effects&quot;:{&quot;blur&quot;:0,&quot;pixelate&quot;:0,&quot;chromaBleed&quot;:0,&quot;tapeDamage&quot;:0,&quot;tapeTracking&quot;:0,&quot;tapeNoise&quot;:1,&quot;tapeSpeed&quot;:0.5,&quot;filmArtifacts&quot;:0,&quot;halftone&quot;:0,&quot;halftoneSize&quot;:0,&quot;twoInkPrint&quot;:0,&quot;twoInkPrintSize&quot;:0,&quot;ascii&quot;:0,&quot;asciiSize&quot;:0.06578947368421052,&quot;asciiInvert&quot;:0,&quot;asciiStyle&quot;:0,&quot;asciiColor&quot;:1,&quot;asciiRotation&quot;:0,&quot;dither&quot;:0,&quot;ditherSize&quot;:0,&quot;bloom&quot;:0,&quot;bloomRadius&quot;:8,&quot;monoScreen&quot;:0,&quot;monoScreenSize&quot;:0,&quot;monoScreenAngle&quot;:0,&quot;monoScreenSpread&quot;:0,&quot;monoScreenShape&quot;:0,&quot;monoScreenInvert&quot;:0,&quot;scanlines&quot;:0,&quot;scanlineCount&quot;:0,&quot;scanlineSoftness&quot;:0,&quot;chromaticAberration&quot;:0,&quot;chromaticAngle&quot;:0,&quot;crtCurvature&quot;:0,&quot;digitalGlitch&quot;:0,&quot;digitalGlitchColorSplit&quot;:0,&quot;digitalGlitchLineTear&quot;:0,&quot;digitalGlitchPixelate&quot;:0,&quot;digitalGlitchBlockAmount&quot;:0,&quot;digitalGlitchBlockDisplacement&quot;:0,&quot;digitalGlitchBlockOpacity&quot;:0,&quot;digitalGlitchSpeed&quot;:0,&quot;engraving&quot;:0,&quot;engravingSpacing&quot;:0.4117647058823529,&quot;engravingMinThickness&quot;:0.2,&quot;engravingMaxThickness&quot;:0.4571428571428572,&quot;engravingAngle&quot;:0.25,&quot;engravingContrast&quot;:0.4666666666666667,&quot;engravingSharpness&quot;:0.59,&quot;engravingWave&quot;:0.2,&quot;engravingWaveFrequency&quot;:0.2222222222222222,&quot;crosshatch&quot;:0,&quot;crosshatchSpacing&quot;:0.28,&quot;crosshatchThickness&quot;:0.25,&quot;crosshatchAngle&quot;:0.25,&quot;crosshatchContrast&quot;:0.3333333333333333,&quot;crosshatchEdges&quot;:0.5,&quot;crosshatchLineWeight&quot;:0,&quot;crosshatchWave&quot;:0.33,&quot;crosshatchWaveFrequency&quot;:0.2222222222222222,&quot;kuwahara&quot;:0,&quot;kuwaharaRadius&quot;:0.14285714285714285,&quot;kuwaharaSharpness&quot;:0.3125,&quot;kuwaharaSaturation&quot;:0.5},&quot;lut&quot;:null,&quot;colorSpace&quot;:&quot;rec709&quot;}" data-hf-id="hf-gd6r" id="vidA" class="clip" src="assets/segA.mp4" data-start="0" data-duration="3.5" data-track-index="0" muted playsinline></video>
+      </div>
+      <div data-hf-id="hf-t5e6" id="camB" class="cam">
+        <div class="mv"><video data-color-grading="{&quot;preset&quot;:&quot;skin-soft&quot;,&quot;intensity&quot;:0.6,&quot;adjust&quot;:{&quot;exposure&quot;:0.04,&quot;contrast&quot;:0.1,&quot;highlights&quot;:-0.12,&quot;shadows&quot;:0.12,&quot;whites&quot;:0,&quot;blacks&quot;:0,&quot;temperature&quot;:0.08,&quot;tint&quot;:0.02,&quot;vibrance&quot;:0,&quot;saturation&quot;:-0.06},&quot;details&quot;:{&quot;vignette&quot;:0.22,&quot;vignetteMidpoint&quot;:0.5,&quot;vignetteRoundness&quot;:0,&quot;vignetteFeather&quot;:0.65,&quot;grain&quot;:0.18,&quot;grainSize&quot;:0.25,&quot;grainRoughness&quot;:0.5},&quot;effects&quot;:{&quot;blur&quot;:0,&quot;pixelate&quot;:0,&quot;chromaBleed&quot;:0,&quot;tapeDamage&quot;:0,&quot;tapeTracking&quot;:0,&quot;tapeNoise&quot;:1,&quot;tapeSpeed&quot;:0.5,&quot;filmArtifacts&quot;:0,&quot;halftone&quot;:0,&quot;halftoneSize&quot;:0,&quot;twoInkPrint&quot;:0,&quot;twoInkPrintSize&quot;:0,&quot;ascii&quot;:0,&quot;asciiSize&quot;:0.06578947368421052,&quot;asciiInvert&quot;:0,&quot;asciiStyle&quot;:0,&quot;asciiColor&quot;:1,&quot;asciiRotation&quot;:0,&quot;dither&quot;:0,&quot;ditherSize&quot;:0,&quot;bloom&quot;:0,&quot;bloomRadius&quot;:8,&quot;monoScreen&quot;:0,&quot;monoScreenSize&quot;:0,&quot;monoScreenAngle&quot;:0,&quot;monoScreenSpread&quot;:0,&quot;monoScreenShape&quot;:0,&quot;monoScreenInvert&quot;:0,&quot;scanlines&quot;:0,&quot;scanlineCount&quot;:0,&quot;scanlineSoftness&quot;:0,&quot;chromaticAberration&quot;:0,&quot;chromaticAngle&quot;:0,&quot;crtCurvature&quot;:0,&quot;digitalGlitch&quot;:0,&quot;digitalGlitchColorSplit&quot;:0,&quot;digitalGlitchLineTear&quot;:0,&quot;digitalGlitchPixelate&quot;:0,&quot;digitalGlitchBlockAmount&quot;:0,&quot;digitalGlitchBlockDisplacement&quot;:0,&quot;digitalGlitchBlockOpacity&quot;:0,&quot;digitalGlitchSpeed&quot;:0,&quot;engraving&quot;:0,&quot;engravingSpacing&quot;:0.4117647058823529,&quot;engravingMinThickness&quot;:0.2,&quot;engravingMaxThickness&quot;:0.4571428571428572,&quot;engravingAngle&quot;:0.25,&quot;engravingContrast&quot;:0.4666666666666667,&quot;engravingSharpness&quot;:0.59,&quot;engravingWave&quot;:0.2,&quot;engravingWaveFrequency&quot;:0.2222222222222222,&quot;crosshatch&quot;:0,&quot;crosshatchSpacing&quot;:0.28,&quot;crosshatchThickness&quot;:0.25,&quot;crosshatchAngle&quot;:0.25,&quot;crosshatchContrast&quot;:0.3333333333333333,&quot;crosshatchEdges&quot;:0.5,&quot;crosshatchLineWeight&quot;:0,&quot;crosshatchWave&quot;:0.33,&quot;crosshatchWaveFrequency&quot;:0.2222222222222222,&quot;kuwahara&quot;:0,&quot;kuwaharaRadius&quot;:0.14285714285714285,&quot;kuwaharaSharpness&quot;:0.3125,&quot;kuwaharaSaturation&quot;:0.5},&quot;lut&quot;:null,&quot;colorSpace&quot;:&quot;rec709&quot;}" data-hf-id="hf-kor3" id="vidB" class="clip" src="assets/segB.mp4" data-start="3.5" data-duration="3.5" data-track-index="0" muted playsinline></video></div>
+      </div>
+      <div data-hf-id="hf-84f4" id="camB2" class="cam">
+        <div class="mv"><video data-color-grading="{&quot;preset&quot;:&quot;skin-soft&quot;,&quot;intensity&quot;:0.6,&quot;adjust&quot;:{&quot;exposure&quot;:0.04,&quot;contrast&quot;:0.1,&quot;highlights&quot;:-0.12,&quot;shadows&quot;:0.12,&quot;whites&quot;:0,&quot;blacks&quot;:0,&quot;temperature&quot;:0.08,&quot;tint&quot;:0.02,&quot;vibrance&quot;:0,&quot;saturation&quot;:-0.06},&quot;details&quot;:{&quot;vignette&quot;:0.22,&quot;vignetteMidpoint&quot;:0.5,&quot;vignetteRoundness&quot;:0,&quot;vignetteFeather&quot;:0.65,&quot;grain&quot;:0.18,&quot;grainSize&quot;:0.25,&quot;grainRoughness&quot;:0.5},&quot;effects&quot;:{&quot;blur&quot;:0,&quot;pixelate&quot;:0,&quot;chromaBleed&quot;:0,&quot;tapeDamage&quot;:0,&quot;tapeTracking&quot;:0,&quot;tapeNoise&quot;:1,&quot;tapeSpeed&quot;:0.5,&quot;filmArtifacts&quot;:0,&quot;halftone&quot;:0,&quot;halftoneSize&quot;:0,&quot;twoInkPrint&quot;:0,&quot;twoInkPrintSize&quot;:0,&quot;ascii&quot;:0,&quot;asciiSize&quot;:0.06578947368421052,&quot;asciiInvert&quot;:0,&quot;asciiStyle&quot;:0,&quot;asciiColor&quot;:1,&quot;asciiRotation&quot;:0,&quot;dither&quot;:0,&quot;ditherSize&quot;:0,&quot;bloom&quot;:0,&quot;bloomRadius&quot;:8,&quot;monoScreen&quot;:0,&quot;monoScreenSize&quot;:0,&quot;monoScreenAngle&quot;:0,&quot;monoScreenSpread&quot;:0,&quot;monoScreenShape&quot;:0,&quot;monoScreenInvert&quot;:0,&quot;scanlines&quot;:0,&quot;scanlineCount&quot;:0,&quot;scanlineSoftness&quot;:0,&quot;chromaticAberration&quot;:0,&quot;chromaticAngle&quot;:0,&quot;crtCurvature&quot;:0,&quot;digitalGlitch&quot;:0,&quot;digitalGlitchColorSplit&quot;:0,&quot;digitalGlitchLineTear&quot;:0,&quot;digitalGlitchPixelate&quot;:0,&quot;digitalGlitchBlockAmount&quot;:0,&quot;digitalGlitchBlockDisplacement&quot;:0,&quot;digitalGlitchBlockOpacity&quot;:0,&quot;digitalGlitchSpeed&quot;:0,&quot;engraving&quot;:0,&quot;engravingSpacing&quot;:0.4117647058823529,&quot;engravingMinThickness&quot;:0.2,&quot;engravingMaxThickness&quot;:0.4571428571428572,&quot;engravingAngle&quot;:0.25,&quot;engravingContrast&quot;:0.4666666666666667,&quot;engravingSharpness&quot;:0.59,&quot;engravingWave&quot;:0.2,&quot;engravingWaveFrequency&quot;:0.2222222222222222,&quot;crosshatch&quot;:0,&quot;crosshatchSpacing&quot;:0.28,&quot;crosshatchThickness&quot;:0.25,&quot;crosshatchAngle&quot;:0.25,&quot;crosshatchContrast&quot;:0.3333333333333333,&quot;crosshatchEdges&quot;:0.5,&quot;crosshatchLineWeight&quot;:0,&quot;crosshatchWave&quot;:0.33,&quot;crosshatchWaveFrequency&quot;:0.2222222222222222,&quot;kuwahara&quot;:0,&quot;kuwaharaRadius&quot;:0.14285714285714285,&quot;kuwaharaSharpness&quot;:0.3125,&quot;kuwaharaSaturation&quot;:0.5},&quot;lut&quot;:null,&quot;colorSpace&quot;:&quot;rec709&quot;}" data-hf-id="hf-aays" id="vidB2" class="clip" src="assets/segB.mp4" data-start="3.9" data-duration="1.9" data-media-start="0.4" data-track-index="1" muted playsinline></video></div>
+      </div>
+      <div data-hf-id="hf-x3i7" id="camC" class="cam">
+        <video data-color-grading="{&quot;preset&quot;:&quot;skin-soft&quot;,&quot;intensity&quot;:0.6,&quot;adjust&quot;:{&quot;exposure&quot;:0.04,&quot;contrast&quot;:0.1,&quot;highlights&quot;:-0.12,&quot;shadows&quot;:0.12,&quot;whites&quot;:0,&quot;blacks&quot;:0,&quot;temperature&quot;:0.08,&quot;tint&quot;:0.02,&quot;vibrance&quot;:0,&quot;saturation&quot;:-0.06},&quot;details&quot;:{&quot;vignette&quot;:0.22,&quot;vignetteMidpoint&quot;:0.5,&quot;vignetteRoundness&quot;:0,&quot;vignetteFeather&quot;:0.65,&quot;grain&quot;:0.18,&quot;grainSize&quot;:0.25,&quot;grainRoughness&quot;:0.5},&quot;effects&quot;:{&quot;blur&quot;:0,&quot;pixelate&quot;:0,&quot;chromaBleed&quot;:0,&quot;tapeDamage&quot;:0,&quot;tapeTracking&quot;:0,&quot;tapeNoise&quot;:1,&quot;tapeSpeed&quot;:0.5,&quot;filmArtifacts&quot;:0,&quot;halftone&quot;:0,&quot;halftoneSize&quot;:0,&quot;twoInkPrint&quot;:0,&quot;twoInkPrintSize&quot;:0,&quot;ascii&quot;:0,&quot;asciiSize&quot;:0.06578947368421052,&quot;asciiInvert&quot;:0,&quot;asciiStyle&quot;:0,&quot;asciiColor&quot;:1,&quot;asciiRotation&quot;:0,&quot;dither&quot;:0,&quot;ditherSize&quot;:0,&quot;bloom&quot;:0,&quot;bloomRadius&quot;:8,&quot;monoScreen&quot;:0,&quot;monoScreenSize&quot;:0,&quot;monoScreenAngle&quot;:0,&quot;monoScreenSpread&quot;:0,&quot;monoScreenShape&quot;:0,&quot;monoScreenInvert&quot;:0,&quot;scanlines&quot;:0,&quot;scanlineCount&quot;:0,&quot;scanlineSoftness&quot;:0,&quot;chromaticAberration&quot;:0,&quot;chromaticAngle&quot;:0,&quot;crtCurvature&quot;:0,&quot;digitalGlitch&quot;:0,&quot;digitalGlitchColorSplit&quot;:0,&quot;digitalGlitchLineTear&quot;:0,&quot;digitalGlitchPixelate&quot;:0,&quot;digitalGlitchBlockAmount&quot;:0,&quot;digitalGlitchBlockDisplacement&quot;:0,&quot;digitalGlitchBlockOpacity&quot;:0,&quot;digitalGlitchSpeed&quot;:0,&quot;engraving&quot;:0,&quot;engravingSpacing&quot;:0.4117647058823529,&quot;engravingMinThickness&quot;:0.2,&quot;engravingMaxThickness&quot;:0.4571428571428572,&quot;engravingAngle&quot;:0.25,&quot;engravingContrast&quot;:0.4666666666666667,&quot;engravingSharpness&quot;:0.59,&quot;engravingWave&quot;:0.2,&quot;engravingWaveFrequency&quot;:0.2222222222222222,&quot;crosshatch&quot;:0,&quot;crosshatchSpacing&quot;:0.28,&quot;crosshatchThickness&quot;:0.25,&quot;crosshatchAngle&quot;:0.25,&quot;crosshatchContrast&quot;:0.3333333333333333,&quot;crosshatchEdges&quot;:0.5,&quot;crosshatchLineWeight&quot;:0,&quot;crosshatchWave&quot;:0.33,&quot;crosshatchWaveFrequency&quot;:0.2222222222222222,&quot;kuwahara&quot;:0,&quot;kuwaharaRadius&quot;:0.14285714285714285,&quot;kuwaharaSharpness&quot;:0.3125,&quot;kuwaharaSaturation&quot;:0.5},&quot;lut&quot;:null,&quot;colorSpace&quot;:&quot;rec709&quot;}" data-hf-id="hf-rdug" id="vidC" class="clip" src="assets/segC.mp4" data-start="7" data-duration="6" data-track-index="0" muted playsinline></video>
+      </div>
+      <div data-hf-id="hf-q0n7" class="shade"></div>
+
+      <div data-hf-id="hf-5i2k" id="divider"></div>
+      <div data-hf-id="hf-gjep" id="tagTop" class="panel-tag">The barber</div>
+      <div data-hf-id="hf-33io" id="tagBot" class="panel-tag">The detail, 4x</div>
+
+      <!-- Shot A -->
+      <div data-hf-id="hf-hmk5" id="title" class="serif" data-layout-allow-overlap="">
+        <div data-hf-id="hf-dolc" class="mask"><span data-hf-id="hf-fz83" class="t1">The</span></div>
+        <div data-hf-id="hf-i5rs" class="mask"><span data-hf-id="hf-rnj8" class="t2">Saturday</span></div>
+        <div data-hf-id="hf-gyup" class="mask"><span data-hf-id="hf-n9c4" class="t3">Cut.</span></div>
+      </div>
+
+      <div data-hf-id="hf-128z" id="fade">
+        <h3 data-hf-id="hf-uf3i">The skin fade</h3>
+        <p data-hf-id="hf-j20h">Five guards, blended by hand</p>
+        <div data-hf-id="hf-hnc7" class="rows">
+          <div data-hf-id="hf-thy4" class="row"><b data-hf-id="hf-dr76">#4</b><div data-hf-id="hf-64lp" class="track"><i data-hf-id="hf-oqvz" class="fill" style="width: 100%"></i></div></div>
+          <div data-hf-id="hf-lt04" class="row"><b data-hf-id="hf-fqqb">#3</b><div data-hf-id="hf-gav5" class="track"><i data-hf-id="hf-avp1" class="fill" style="width: 78%"></i></div></div>
+          <div data-hf-id="hf-km31" class="row"><b data-hf-id="hf-g51c">#2</b><div data-hf-id="hf-hhs8" class="track"><i data-hf-id="hf-i72d" class="fill" style="width: 56%"></i></div></div>
+          <div data-hf-id="hf-l0e2" class="row"><b data-hf-id="hf-ey49">#1</b><div data-hf-id="hf-h3h7" class="track"><i data-hf-id="hf-xlth" class="fill" style="width: 34%"></i></div></div>
+          <div data-hf-id="hf-mzx7" class="row"><b data-hf-id="hf-fcfa">#0</b><div data-hf-id="hf-f3y2" class="track"><i data-hf-id="hf-qimt" class="fill" style="width: 12%"></i></div></div>
+        </div>
+      </div>
+
+      <!-- Shot B -->
+      <div id="quoteScrim"></div>
+      <div data-hf-id="hf-gaij" id="quote" data-layout-allow-overlap>
+        <span data-hf-id="hf-aj1q" class="mark" data-layout-allow-overlap>“</span>
+        <div data-hf-id="hf-m60b" class="words" data-layout-allow-overlap><span data-hf-id="hf-iwvn">Precision</span><span data-hf-id="hf-k6nl">is</span><span data-hf-id="hf-3tds">the</span><span data-hf-id="hf-fsw8">whole</span><span data-hf-id="hf-knzm">job.</span></div>
+        <div data-hf-id="hf-k70k" class="by">Marcus Reed, master barber. <em data-hf-id="hf-wiby">★ 4.9 from <span data-hf-id="hf-dcgb" id="reviews">0</span> reviews</em></div>
+      </div>
+
+      <!-- Shot C -->
+      <div data-hf-id="hf-p9u4" id="timer">
+        <svg data-hf-id="hf-2t5h" viewBox="0 0 280 280" width="280" height="280" aria-hidden="true">
+          <circle data-hf-id="hf-q0go" cx="140" cy="140" r="118" fill="rgba(20,18,16,0.55)" stroke="rgba(243,235,221,0.25)" stroke-width="6" />
+          <g data-hf-id="hf-bhn3" id="ticks" />
+          <circle data-hf-id="hf-8o9t" id="arc" cx="140" cy="140" r="118" fill="none" stroke="#c9a24b" stroke-width="14" stroke-linecap="round" transform="rotate(-90 140 140)" />
+        </svg>
+        <div data-hf-id="hf-eyst" class="val"><b data-hf-id="hf-2qq3" id="mins">0</b><small data-hf-id="hf-acit">minutes</small></div>
+      </div>
+
+      <div data-hf-id="hf-pito" id="payoff" class="serif" data-layout-allow-overlap="">
+        <div data-hf-id="hf-x7wr" class="l1 mask"><span data-hf-id="hf-ia98">Walked in</span></div>
+        <div data-hf-id="hf-5zyh" class="swap" data-layout-allow-overlap="">
+          <span data-hf-id="hf-k65k" class="old">tired.</span>
+          <span data-hf-id="hf-dydn" class="new">sharp.</span>
+          <i data-hf-id="hf-7qtu" class="strike"></i>
+        </div>
+        <div data-hf-id="hf-da4k" class="l3">32 minutes. One chair.</div>
+      </div>
+
+      <!-- letterbox bars sit above the footage and graphics -->
+      <div data-hf-id="hf-w6wl" id="barTop" class="bar"><span data-hf-id="hf-32nc" class="mast">SHARP LINE</span><span data-hf-id="hf-wpjs" class="meta">The Saturday Cut</span></div>
+      <div data-hf-id="hf-a4er" id="barBot" class="bar"><span data-hf-id="hf-u5x3" class="rec"><i data-hf-id="hf-wt6k"></i>Live from the chair</span><span data-hf-id="hf-1eeg" class="tc" id="tc">2:15:00 PM</span></div>
+
+      <!-- chapter cards -->
+      <div data-hf-id="hf-snih" id="ch1" class="chapter"><span data-hf-id="hf-cshg" class="num">01</span><span data-hf-id="hf-6km2" class="name">The chair</span></div>
+      <div data-hf-id="hf-wlmi" id="ch2" class="chapter"><span data-hf-id="hf-blkd" class="num">02</span><span data-hf-id="hf-k35d" class="name">The craft</span></div>
+      <div data-hf-id="hf-4lpn" id="ch3" class="chapter"><span data-hf-id="hf-bzve" class="num">03</span><span data-hf-id="hf-wp28" class="name">The reveal</span></div>
+
+      <!-- cover end card -->
+      <div data-hf-id="hf-mgoy" id="cover">
+        <div data-hf-id="hf-0a1q" class="frame" id="frTop" style="left: 0; right: 0; top: 0; height: 44px"></div>
+        <div data-hf-id="hf-rboo" class="frame" id="frL" style="left: 0; top: 0; width: 44px; height: 830px"></div>
+        <div data-hf-id="hf-j8af" class="frame" id="frR" style="right: 0; top: 0; width: 44px; height: 830px"></div>
+        <div data-hf-id="hf-cr6h" class="sheet">
+          <div data-hf-id="hf-c5se" class="masthead" id="masthead"><span data-hf-id="hf-mpbv">SHARP</span> <span data-hf-id="hf-vc9n">LINE</span></div>
+          <div data-hf-id="hf-a46i" class="rule"></div>
+          <div data-hf-id="hf-5u2y" class="dateline"><span data-hf-id="hf-oo9r">Barbershop</span><span data-hf-id="hf-thrm">Issue No. 12</span></div>
+          <div data-hf-id="hf-29kv" class="head">Your chair is waiting.</div>
+          <div data-hf-id="hf-inqz" class="cta">Book your chair</div>
+          <div data-hf-id="hf-cjx3" class="fine">Walk-ins welcome. Link in bio.</div>
+        </div>
+      </div>
+
+      <div data-hf-id="hf-o6ww" id="progress"></div>
+    </div>
+
+    <script>
+      (function () {
+        const tl = gsap.timeline({ paused: true });
+        const $ = (s) => document.querySelector(s);
+
+        // Timer ring ticks (static geometry).
+        const ticks = $("#ticks");
+        for (let i = 0; i < 12; i++) {
+          const a = (i / 12) * Math.PI * 2;
+          const x1 = 140 + Math.cos(a) * 96, y1 = 140 + Math.sin(a) * 96;
+          const x2 = 140 + Math.cos(a) * 84, y2 = 140 + Math.sin(a) * 84;
+          ticks.insertAdjacentHTML("beforeend", `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="rgba(243,235,221,0.5)" stroke-width="4"/>`);
+        }
+        const ARC = 2 * Math.PI * 118;
+        $("#arc").setAttribute("stroke-dasharray", ARC);
+        $("#arc").setAttribute("stroke-dashoffset", ARC);
+
+        // Initial states (outside the timeline so frame 0 is right).
+        gsap.set(["#ch2", "#ch3"], { clipPath: "inset(0 0 0 100%)" });
+        gsap.set(["#fade", "#cover", "#payoff", "#quote"], { opacity: 0 });
+        gsap.set("#camB2", { clipPath: "inset(100% 0 0 0)" });
+        // Frame the clippers (y ~0.78, x ~0.55 of the shot) in the lower panel.
+        gsap.set("#camB2 .mv", { scale: 1.7, xPercent: -8.5, yPercent: -22.6 });
+        gsap.set("#divider", { scaleX: 0 });
+
+        // Running timecode in the bottom bar: 2:15 PM plus elapsed, jumping 32 minutes at the reveal.
+        const tcEl = $("#tc");
+        const clock = { s: 0 };
+        const fmt = (sec) => {
+          const m = 15 + Math.floor(sec / 60), s = Math.floor(sec % 60);
+          return "2:" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0") + " PM";
+        };
+        tl.fromTo(clock, { s: 0 }, { s: 7, duration: 7, ease: "none", onUpdate: () => (tcEl.textContent = fmt(clock.s)) }, 0);
+        tl.fromTo(clock, { s: 7 }, { s: 32 * 60 + 6, duration: 0.9, ease: "power2.inOut", immediateRender: false, onUpdate: () => (tcEl.textContent = fmt(clock.s)) }, 7.3);
+        tl.to(clock, { s: 32 * 60 + 9, duration: 2.8, ease: "none", onUpdate: () => (tcEl.textContent = fmt(clock.s)) }, 8.2);
+
+        // Letterbox bars slide in.
+        tl.fromTo("#barTop", { yPercent: -100 }, { yPercent: 0, duration: 0.5, ease: "power3.out" }, 0.35);
+        tl.fromTo("#barBot", { yPercent: 100 }, { yPercent: 0, duration: 0.5, ease: "power3.out" }, 0.35);
+
+        // ---------- 01 The chair ----------
+        tl.fromTo("#ch1 .num", { yPercent: 40, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.25, ease: "power3.out" }, 0);
+        tl.to("#ch1", { clipPath: "inset(0 100% 0 0)", duration: 0.45, ease: "power4.inOut" }, 0.4);
+        tl.fromTo("#camA", { scale: 1.3 }, { scale: 1.1, duration: 0.9, ease: "power3.out" }, 0.4);
+        tl.to("#camA", { scale: 1.18, duration: 2.2, ease: "none" }, 1.3);
+
+        tl.fromTo("#title .mask > span", { yPercent: 110 }, { yPercent: 0, duration: 0.6, ease: "power4.out", stagger: 0.12 }, 0.75);
+        tl.to("#title .mask > span", { yPercent: -110, duration: 0.35, ease: "power3.in", stagger: 0.06 }, 1.85);
+        tl.set("#title", { opacity: 0 }, 2.3);
+
+        // Fade diagram: card lifts in, bars grow bottom-up like the fade itself.
+        tl.fromTo("#fade", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 2.3);
+        tl.fromTo("#fade .fill", { scaleX: 0 }, { scaleX: 1, duration: 0.4, ease: "power3.out", stagger: { each: 0.1, from: "end" } }, 2.25);
+        tl.to("#fade", { opacity: 0, y: -30, duration: 0.2, ease: "power2.in" }, 3.12);
+
+        // ---------- 02 The craft ----------
+        tl.to("#ch2", { clipPath: "inset(0 0 0 0%)", duration: 0.25, ease: "power4.in" }, 3.2);
+        tl.fromTo("#ch2 .name", { x: 80, opacity: 0 }, { x: 0, opacity: 1, duration: 0.3, ease: "power3.out" }, 3.35);
+        tl.to("#ch2", { clipPath: "inset(0 100% 0 0)", duration: 0.35, ease: "power4.inOut" }, 3.72);
+
+        // Split screen: barber above, the gold clippers magnified below.
+        tl.fromTo("#camB .mv", { scale: 1.15 }, { scale: 1.22, duration: 0.5, ease: "none" }, 3.5);
+        tl.to("#camB", { clipPath: "inset(0 0 50% 0)", duration: 0.45, ease: "power3.inOut" }, 4.0);
+        tl.to("#camB .mv", { yPercent: -12, duration: 0.45, ease: "power3.inOut" }, 4.0);
+        tl.fromTo("#camB2", { clipPath: "inset(100% 0 0 0)" }, { clipPath: "inset(50% 0 0 0)", duration: 0.45, ease: "power3.inOut", immediateRender: false }, 4.0);
+        tl.to("#camB2 .mv", { scale: 1.85, xPercent: -9, yPercent: -25, duration: 0.9, ease: "none" }, 4.45);
+        tl.to("#divider", { scaleX: 1, duration: 0.4, ease: "power3.out" }, 4.2);
+        tl.fromTo(["#tagTop", "#tagBot"], { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.3, ease: "power3.out", stagger: 0.1 }, 4.35);
+        tl.to(["#tagTop", "#tagBot"], { opacity: 0, duration: 0.15 }, 5.2);
+        tl.to("#divider", { scaleX: 0, duration: 0.3, ease: "power3.in" }, 5.15);
+        tl.to("#camB2", { clipPath: "inset(100% 0 0 0)", duration: 0.4, ease: "power3.inOut" }, 5.3);
+        tl.to("#camB", { clipPath: "inset(0 0 0% 0)", duration: 0.4, ease: "power3.inOut" }, 5.3);
+        tl.to("#camB .mv", { yPercent: 0, scale: 1.1, duration: 0.4, ease: "power3.inOut" }, 5.3);
+
+        // Pull quote builds word by word.
+        tl.set("#quote", { opacity: 1 }, 5.5);
+        tl.fromTo("#quoteScrim", { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power2.out" }, 5.35);
+        tl.fromTo("#quote .mark", { scale: 0.3, opacity: 0, transformOrigin: "0% 50%" }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2)" }, 5.55);
+        tl.fromTo("#quote .words span", { yPercent: 60, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.35, ease: "power3.out", stagger: 0.12 }, 5.7);
+        tl.fromTo("#quote .by", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, 6.25);
+        const rv = { n: 0 };
+        tl.fromTo(rv, { n: 0 }, { n: 312, duration: 0.5, ease: "power2.out", immediateRender: false, onUpdate: () => ($("#reviews").textContent = Math.round(rv.n)) }, 6.25);
+        tl.to(["#quote", "#quoteScrim"], { opacity: 0, duration: 0.15 }, 6.7);
+
+        // ---------- 03 The reveal ----------
+        tl.to("#ch3", { clipPath: "inset(0 0 0 0%)", duration: 0.25, ease: "power4.in" }, 6.75);
+        tl.fromTo("#ch3 .name", { x: 80, opacity: 0 }, { x: 0, opacity: 1, duration: 0.3, ease: "power3.out" }, 6.9);
+        tl.to("#ch3", { clipPath: "inset(0 100% 0 0)", duration: 0.35, ease: "power4.inOut" }, 7.25);
+        tl.fromTo("#camC", { scale: 1.2 }, { scale: 1.02, duration: 1.2, ease: "power3.out" }, 7.2);
+        tl.to("#camC", { scale: 1.1, duration: 2.8, ease: "none" }, 8.4);
+
+        // Timer ring: 32 minutes in the chair.
+        tl.fromTo("#timer", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(1.8)" }, 7.5);
+        tl.to("#arc", { attr: { "stroke-dashoffset": ARC * (1 - 32 / 60) }, duration: 1.1, ease: "power2.inOut" }, 7.6);
+        const mins = { n: 0 };
+        tl.fromTo(mins, { n: 0 }, { n: 32, duration: 1.1, ease: "power2.inOut", immediateRender: false, onUpdate: () => ($("#mins").textContent = Math.round(mins.n)) }, 7.6);
+
+        // Walked in tired. -> strike -> sharp.
+        tl.set("#payoff", { opacity: 1 }, 7.7);
+        tl.fromTo("#payoff .l1 span", { yPercent: 110 }, { yPercent: 0, duration: 0.5, ease: "power4.out" }, 7.75);
+        tl.fromTo("#payoff .old", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 7.95);
+        tl.fromTo("#payoff .strike", { scaleX: 0 }, { scaleX: 1, duration: 0.3, ease: "power2.inOut" }, 8.55);
+        tl.to(["#payoff .old", "#payoff .strike"], { opacity: 0, y: 50, duration: 0.3, ease: "power2.in" }, 8.95);
+        tl.fromTo("#payoff .new", { opacity: 0, y: -60 }, { opacity: 1, y: 0, duration: 0.45, ease: "back.out(2)" }, 9.1);
+        tl.fromTo("#payoff .l3", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 9.3);
+        tl.to(["#payoff", "#timer"], { opacity: 0, duration: 0.2 }, 10.05);
+
+        // ---------- Cover end card ----------
+        tl.to("#barTop", { yPercent: -100, duration: 0.35, ease: "power3.in" }, 10.1);
+        tl.to("#barBot", { yPercent: 100, duration: 0.35, ease: "power3.in" }, 10.1);
+        tl.set("#cover", { opacity: 1 }, 10.2);
+        tl.fromTo("#cover .sheet", { yPercent: 100 }, { yPercent: 0, duration: 0.6, ease: "power4.out" }, 10.2);
+        tl.fromTo("#frTop", { yPercent: -100 }, { yPercent: 0, duration: 0.45, ease: "power3.out" }, 10.3);
+        tl.fromTo("#frL", { xPercent: -100 }, { xPercent: 0, duration: 0.45, ease: "power3.out" }, 10.3);
+        tl.fromTo("#frR", { xPercent: 100 }, { xPercent: 0, duration: 0.45, ease: "power3.out" }, 10.3);
+        tl.fromTo("#masthead span", { yPercent: 60, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.5, ease: "power4.out", stagger: 0.12 }, 10.55);
+        tl.fromTo("#cover .rule", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power3.inOut" }, 10.75);
+        tl.fromTo("#cover .dateline", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 10.95);
+        tl.fromTo("#cover .head", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 11.05);
+        tl.fromTo("#cover .cta", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2)" }, 11.35);
+        tl.to("#cover .cta", { keyframes: [{ scale: 0.94, duration: 0.1 }, { scale: 1.03, duration: 0.14 }, { scale: 1, duration: 0.12 }] }, 12.1);
+        tl.fromTo("#cover .fine", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 11.6);
+        tl.fromTo("#camC", { yPercent: 0 }, { yPercent: 6, duration: 0.6, ease: "power3.out", immediateRender: false }, 10.2);
+
+        tl.fromTo("#progress", { scaleX: 0 }, { scaleX: 1, duration: 13, ease: "none" }, 0);
+
+        tl.seek(0);
+        window.__timelines["main"] = tl;
+      })();
+    </script>
+  </body>
+</html>
