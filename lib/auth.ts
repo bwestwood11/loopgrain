@@ -6,6 +6,8 @@ import * as schema from "@/db/schema";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg", schema }),
+  // BETTER_AUTH_URL is trusted automatically; these cover the other production hostname.
+  trustedOrigins: ["https://loopgrain.io", "https://www.loopgrain.io"],
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
