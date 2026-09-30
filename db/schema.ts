@@ -9,6 +9,8 @@ export const user = pgTable("user", {
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
   businessName: text("business_name"),
+  // "admin" unlocks /admin. Set by hand in the database; users can't choose it at sign-up.
+  role: text("role").notNull().default("user"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at")
     .notNull()

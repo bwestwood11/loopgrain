@@ -14,6 +14,11 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
           <Link href="/dashboard" className="rounded-full px-3 py-2 hover:bg-paper">
             Projects
           </Link>
+          {user.role === "admin" && (
+            <Link href="/admin" className="rounded-full px-3 py-2 hover:bg-paper">
+              Admin
+            </Link>
+          )}
           <span className="hidden max-w-48 truncate px-2 text-slate md:inline">{user.email}</span>
           <SignOutButton />
         </nav>

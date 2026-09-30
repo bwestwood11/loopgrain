@@ -15,6 +15,7 @@ export const auth = betterAuth({
   user: {
     additionalFields: {
       businessName: { type: "string", required: false },
+      role: { type: "string", required: false, defaultValue: "user", input: false },
     },
   },
   // nextCookies must stay last so it can set cookies from server actions.
