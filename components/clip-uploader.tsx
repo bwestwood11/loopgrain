@@ -2,9 +2,20 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition, type DragEvent } from "react";
-import { completeClipUpload, startClipUpload, submitProject } from "@/app/dashboard/actions";
+import {
+  completeClipUpload,
+  sendWithCredit,
+  startCheckout,
+  startClipUpload,
+} from "@/app/dashboard/actions";
 import { formatBytes, formatDuration } from "@/lib/format";
-import { MAX_CLIP_BYTES, MAX_CLIP_SECONDS, MAX_CLIPS_PER_PROJECT } from "@/lib/pricing";
+import {
+  formatUSD,
+  MAX_CLIP_BYTES,
+  MAX_CLIP_SECONDS,
+  MAX_CLIPS_PER_PROJECT,
+  PRICE_PER_VIDEO,
+} from "@/lib/pricing";
 
 // Files go from the browser straight to R2 with presigned URLs; Vercel
 // functions can't accept request bodies anywhere near phone-video size.
@@ -82,9 +93,12 @@ function put(
 export function ClipUploader({
   projectId,
   uploadedIds,
+  credits,
 }: {
   projectId: string;
   uploadedIds: string[];
+  // Prepaid videos on the account; when > 0, sending uses one instead of checking out.
+  credits: number;
 }) {
   const router = useRouter();
   const [items, setItems] = useState<Item[]>([]);
@@ -346,10 +360,14 @@ export function ClipUploader({
       <div className="mt-8 rounded-2xl bg-ink p-5 text-paper sm:flex sm:items-center sm:justify-between sm:gap-6">
         <p className="text-sm text-paper/70">
           {uploadedIds.length === 0
-            ? "Upload at least one clip to send this project to your editor."
+            ? "Upload at least one clip, then send this project to your editor."
             : busy
               ? "Hang tight while your clips finish uploading."
-              : `${uploadedIds.length} ${uploadedIds.length === 1 ? "clip" : "clips"} ready. You can't add more once it's sent.`}
+              : `${uploadedIds.length} ${uploadedIds.length === 1 ? "clip" : "clips"} ready. ${
+                  credits > 0
+                    ? `This uses 1 of your ${credits} prepaid ${credits === 1 ? "video" : "videos"}.`
+                    : "Your editor starts once payment goes through."
+                } You can't add clips after that.`}
         </p>
         <button
           type="button"
@@ -357,13 +375,20 @@ export function ClipUploader({
           onClick={() =>
             startSubmit(async () => {
               setSubmitError(undefined);
-              const result = await submitProject(projectId);
+              // Without credits this redirects to Stripe Checkout and never returns.
+              const result = await (credits > 0 ? sendWithCredit : startCheckout)(projectId);
               if (result?.error) setSubmitError(result.error);
             })
           }
           className="mt-4 w-full shrink-0 rounded-full bg-caption px-6 py-3 font-semibold text-ink hover:bg-paper disabled:opacity-40 disabled:hover:bg-caption sm:mt-0 sm:w-auto"
         >
-          {submitting ? "Sending…" : "Send to editor"}
+          {credits > 0
+            ? submitting
+              ? "Sending…"
+              : "Send to editor"
+            : submitting
+              ? "Opening checkout…"
+              : `Pay ${formatUSD(PRICE_PER_VIDEO)} and send`}
         </button>
       </div>
       {submitError && (

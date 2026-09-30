@@ -11,16 +11,26 @@ import { TURNAROUND_DAYS } from "@/lib/pricing";
 import { getProject } from "@/lib/projects";
 import { presignDownload } from "@/lib/r2";
 import { requireUser } from "@/lib/session";
+import { fulfillCheckout } from "@/lib/stripe";
+import { availableCredits } from "@/lib/orders";
 
 export const metadata: Metadata = { title: "Project | Loopgrain" };
 
 export default async function ProjectPage(props: PageProps<"/dashboard/projects/[id]">) {
   const { id } = await props.params;
+  const { checkout, session_id } = await props.searchParams;
   const user = await requireUser(`/dashboard/projects/${id}`);
-  const data = await getProject(user.id, id);
+  let data = await getProject(user.id, id);
   if (!data) notFound();
 
+  // Back from Stripe: confirm the payment now rather than waiting for the webhook.
+  if (checkout === "success" && data.project.status === "draft" && typeof session_id === "string") {
+    if (await fulfillCheckout(session_id).catch(() => false)) data = await getProject(user.id, id);
+    if (!data) notFound();
+  }
+
   const { project, clips, deliverables, revisions } = data;
+  const credits = project.status === "draft" ? await availableCredits(user.id) : 0;
   const uploaded = clips.filter((c) => c.uploaded);
   const isDraft = project.status === "draft";
   const openRevision = revisions.find((r) => !r.resolved);
@@ -38,6 +48,17 @@ export default async function ProjectPage(props: PageProps<"/dashboard/projects/
 
       <Progress status={project.status} />
 
+      {checkout === "success" && (
+        <Banner tone={project.paidAt ? "good" : "info"}>
+          {project.paidAt
+            ? "Payment received, thank you. Your clips are with your editor."
+            : "Your payment is processing. This page will update once Stripe confirms it."}
+        </Banner>
+      )}
+      {checkout === "cancelled" && isDraft && (
+        <Banner tone="info">Checkout cancelled. You haven&apos;t been charged.</Banner>
+      )}
+
       <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_20rem]">
         <div className="min-w-0 space-y-10">
           {isDraft && (
@@ -52,7 +73,11 @@ export default async function ProjectPage(props: PageProps<"/dashboard/projects/
                 </div>
               )}
               <div className="mt-4">
-                <ClipUploader projectId={project.id} uploadedIds={uploaded.map((c) => c.id)} />
+                <ClipUploader
+                  projectId={project.id}
+                  uploadedIds={uploaded.map((c) => c.id)}
+                  credits={credits}
+                />
               </div>
             </section>
           )}
@@ -119,11 +144,19 @@ export default async function ProjectPage(props: PageProps<"/dashboard/projects/
           )}
         </div>
 
-        <aside className="h-fit space-y-4 rounded-2xl bg-paper p-6 shadow-[0_1px_0_var(--color-line)]">
-          <h2 className="font-semibold">Brief</h2>
-          <p className="whitespace-pre-line text-sm text-slate">
-            {project.brief || "No brief added. Your editor will work from your clips."}
-          </p>
+        <aside className="h-fit space-y-6 rounded-2xl bg-paper p-6 shadow-[0_1px_0_var(--color-line)]">
+          <div>
+            <h2 className="font-semibold">Brief</h2>
+            <p className="mt-2 whitespace-pre-line text-sm text-slate">
+              {project.brief || "No brief added. Your editor will work from your clips."}
+            </p>
+          </div>
+          {project.paidAt && (
+            <div>
+              <h2 className="font-semibold">Payment</h2>
+              <p className="mt-2 text-sm text-slate">Paid {formatDate(project.paidAt)}</p>
+            </div>
+          )}
         </aside>
       </div>
     </>
@@ -150,6 +183,19 @@ function Progress({ status }: { status: ProjectStatus }) {
         );
       })}
     </ol>
+  );
+}
+
+function Banner({ tone, children }: { tone: "good" | "info"; children: React.ReactNode }) {
+  return (
+    <p
+      role="status"
+      className={`mt-6 rounded-xl px-4 py-3 text-sm font-medium ${
+        tone === "good" ? "bg-[#d4f0e2] text-[#16603f]" : "bg-paper text-ink"
+      }`}
+    >
+      {children}
+    </p>
   );
 }
 

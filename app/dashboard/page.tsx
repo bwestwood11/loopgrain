@@ -1,16 +1,27 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { StatusPill } from "@/components/project-status";
+import { VideoCalculator } from "@/components/video-calculator";
+import { availableCredits } from "@/lib/orders";
 import { listProjects, type ProjectSummary } from "@/lib/projects";
 import { requireUser } from "@/lib/session";
+import { fulfillCheckout } from "@/lib/stripe";
 import { addDays, formatDate } from "@/lib/format";
 import { formatUSD, MAX_CLIP_SECONDS, PRICE_PER_VIDEO, TURNAROUND_DAYS } from "@/lib/pricing";
 
 export const metadata: Metadata = { title: "Dashboard | Loopgrain" };
 
-export default async function DashboardPage() {
+export default async function DashboardPage(props: PageProps<"/dashboard">) {
   const user = await requireUser();
-  const projects = await listProjects(user.id);
+  const { checkout, session_id } = await props.searchParams;
+
+  // Back from buying videos: record the payment now rather than waiting for the webhook.
+  const paid =
+    checkout === "success" &&
+    typeof session_id === "string" &&
+    (await fulfillCheckout(session_id).catch(() => false));
+
+  const [projects, credits] = await Promise.all([listProjects(user.id), availableCredits(user.id)]);
   const firstName = user.name.split(" ")[0];
 
   const drafts = projects.filter((p) => p.status === "draft");
@@ -39,29 +50,62 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      {projects.length === 0 ? (
-        <Welcome />
-      ) : (
-        <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_20rem]">
-          <div className="space-y-12">
-            {drafts.length > 0 && (
-              <ProjectSection
-                title="Finish uploading"
-                description="Add your clips, then send these to your editor."
-                projects={drafts}
-              />
-            )}
-            {inProgress.length > 0 && <ProjectSection title="In the edit" projects={inProgress} />}
-            <ProjectSection
-              title="Completed"
-              description="Download finished videos or ask for changes."
-              projects={completed}
-              empty="Finished videos will show up here."
-            />
-          </div>
-          <OrderCard />
-        </div>
+      {checkout === "success" && (
+        <p
+          role="status"
+          className={`mt-6 rounded-xl px-4 py-3 text-sm font-medium ${paid ? "bg-[#d4f0e2] text-[#16603f]" : "bg-paper"}`}
+        >
+          {paid
+            ? "Payment received, thank you. Your videos are ready to use."
+            : "Your payment is processing. Your balance will update once Stripe confirms it."}
+        </p>
       )}
+      {checkout === "cancelled" && (
+        <p role="status" className="mt-6 rounded-xl bg-paper px-4 py-3 text-sm font-medium">
+          Checkout cancelled. You haven&apos;t been charged.
+        </p>
+      )}
+
+      <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_22rem]">
+        <div className="min-w-0 space-y-12">
+          {projects.length === 0 ? (
+            <Welcome credits={credits} />
+          ) : (
+            <>
+              {drafts.length > 0 && (
+                <ProjectSection
+                  title="Finish uploading"
+                  description="Add your clips, then send these to your editor."
+                  projects={drafts}
+                />
+              )}
+              {inProgress.length > 0 && (
+                <ProjectSection title="In the edit" projects={inProgress} />
+              )}
+              <ProjectSection
+                title="Completed"
+                description="Download finished videos or ask for changes."
+                projects={completed}
+                empty="Finished videos will show up here."
+              />
+            </>
+          )}
+        </div>
+
+        <aside className="h-fit space-y-4 lg:sticky lg:top-6">
+          {credits > 0 && <Balance credits={credits} />}
+          <section aria-labelledby="order-heading">
+            <h2 id="order-heading" className="mb-3 text-xl font-semibold">
+              {credits > 0 ? "Buy more videos" : "Order videos"}
+            </h2>
+            <VideoCalculator signedIn initialCount={1} />
+            <p className="mt-3 text-sm text-slate">
+              Only need one? Start a project and pay when you send it. Delivered within{" "}
+              {TURNAROUND_DAYS} days.
+            </p>
+          </section>
+        </aside>
+      </div>
     </>
   );
 }
@@ -81,9 +125,9 @@ const STEPS = [
   },
 ];
 
-function Welcome() {
+function Welcome({ credits }: { credits: number }) {
   return (
-    <section className="mt-10 rounded-2xl bg-ink p-6 text-paper sm:p-10">
+    <section className="rounded-2xl bg-ink p-6 text-paper sm:p-10">
       <h2 className="display text-4xl sm:text-5xl">Let&apos;s make your first video</h2>
       <ol className="mt-8 grid gap-6 sm:grid-cols-3">
         {STEPS.map((step, i) => (
@@ -102,7 +146,9 @@ function Welcome() {
           Start your first video
         </Link>
         <span className="text-sm text-paper/60">
-          {formatUSD(PRICE_PER_VIDEO)} per video. No subscription.
+          {credits > 0
+            ? `You have ${credits} prepaid ${credits === 1 ? "video" : "videos"}.`
+            : `${formatUSD(PRICE_PER_VIDEO)} per video. No subscription.`}
         </span>
       </div>
     </section>
@@ -182,34 +228,20 @@ function ProjectCard({ project: p }: { project: ProjectSummary }) {
   );
 }
 
-function OrderCard() {
+function Balance({ credits }: { credits: number }) {
   return (
-    <aside className="h-fit rounded-2xl bg-ink p-6 text-paper lg:sticky lg:top-6">
-      <h2 className="display text-3xl">Order a new edit</h2>
-      <p className="mt-3 text-sm text-paper/70">
-        Start a project for each video you want. Upload the clips, add a few notes, and we&apos;ll
-        handle the rest.
+    <section className="rounded-2xl bg-paper p-5 shadow-[0_1px_0_var(--color-line)]">
+      <p className="text-sm text-slate">Prepaid videos</p>
+      <p className="display mt-1 text-5xl tabular-nums">{credits}</p>
+      <p className="mt-2 text-sm text-slate">
+        Each project you send to your editor uses one. No need to check out again.
       </p>
-      <dl className="mt-6 space-y-2 border-t border-paper/15 pt-5 text-sm">
-        <div className="flex justify-between">
-          <dt className="text-paper/70">Per video</dt>
-          <dd className="font-semibold">{formatUSD(PRICE_PER_VIDEO)}</dd>
-        </div>
-        <div className="flex justify-between">
-          <dt className="text-paper/70">Turnaround</dt>
-          <dd className="font-semibold">{TURNAROUND_DAYS} days</dd>
-        </div>
-        <div className="flex justify-between">
-          <dt className="text-paper/70">Clip length</dt>
-          <dd className="font-semibold">Under {MAX_CLIP_SECONDS}s each</dd>
-        </div>
-      </dl>
       <Link
         href="/dashboard/projects/new"
-        className="mt-6 block rounded-full bg-caption px-5 py-3.5 text-center font-semibold text-ink hover:bg-paper"
+        className="mt-4 inline-flex rounded-full bg-cobalt px-4 py-2 text-sm font-semibold text-white hover:bg-cobalt-deep"
       >
-        Start a new video
+        Start a project
       </Link>
-    </aside>
+    </section>
   );
 }

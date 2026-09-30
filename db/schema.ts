@@ -1,4 +1,14 @@
-import { boolean, index, integer, pgEnum, pgTable, real, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  index,
+  integer,
+  pgEnum,
+  pgTable,
+  real,
+  text,
+  timestamp,
+  type AnyPgColumn,
+} from "drizzle-orm/pg-core";
 
 // Tables required by Better Auth. Column names match its drizzle adapter defaults.
 
@@ -88,6 +98,9 @@ export const project = pgTable(
     title: text("title").notNull(),
     brief: text("brief"),
     status: projectStatus("status").notNull().default("draft"),
+    // The paid order this video was charged to. Only paid projects move past "draft".
+    orderId: text("order_id").references((): AnyPgColumn => order.id),
+    paidAt: timestamp("paid_at"),
     submittedAt: timestamp("submitted_at"),
     deliveredAt: timestamp("delivered_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -97,6 +110,27 @@ export const project = pgTable(
       .$onUpdate(() => new Date()),
   },
   (t) => [index("project_user_idx").on(t.userId)],
+);
+
+// One Stripe payment for `quantity` videos. Each submitted project uses one;
+// unused ones are the customer's prepaid balance.
+export const order = pgTable(
+  "order",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    quantity: integer("quantity").notNull(),
+    used: integer("used").notNull().default(0),
+    // Set when the order was started from a project's "Pay and send" button.
+    projectId: text("project_id"),
+    amountCents: integer("amount_cents"),
+    stripeCheckoutSessionId: text("stripe_checkout_session_id").unique(),
+    paidAt: timestamp("paid_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("order_user_idx").on(t.userId)],
 );
 
 export const clip = pgTable(
@@ -154,5 +188,6 @@ export const revisionRequest = pgTable(
 export type Project = typeof project.$inferSelect;
 export type ProjectStatus = (typeof projectStatus.enumValues)[number];
 export type Clip = typeof clip.$inferSelect;
+export type Order = typeof order.$inferSelect;
 export type Deliverable = typeof deliverable.$inferSelect;
 export type RevisionRequest = typeof revisionRequest.$inferSelect;

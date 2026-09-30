@@ -1,21 +1,52 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { formatUSD, PRICE_PER_VIDEO } from "@/lib/pricing";
+import { useActionState, useState } from "react";
+import { buyVideos } from "@/app/dashboard/actions";
+import { formatUSD, MAX_VIDEOS_PER_ORDER, PRICE_PER_VIDEO } from "@/lib/pricing";
 
 const MIN = 1;
-const MAX = 100;
+const MAX = MAX_VIDEOS_PER_ORDER;
+const PRESETS = [1, 3, 5, 10];
 
-export function VideoCalculator({ signedIn = false }: { signedIn?: boolean }) {
-  const [count, setCount] = useState(5);
+export function VideoCalculator({
+  signedIn = false,
+  initialCount = 5,
+}: {
+  signedIn?: boolean;
+  initialCount?: number;
+}) {
+  const [count, setCount] = useState(initialCount);
+  const [state, action, pending] = useActionState(buyVideos, undefined);
   const set = (n: number) => setCount(Math.min(MAX, Math.max(MIN, n || MIN)));
+  const noun = count === 1 ? "video" : "videos";
 
   return (
     <div className="rounded-2xl bg-ink p-6 text-paper sm:p-8">
       <label htmlFor="video-count" className="text-sm text-paper/70">
         How many videos do you need?
       </label>
+
+      {signedIn && (
+        <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Quick picks">
+          {PRESETS.map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => set(n)}
+              aria-pressed={count === n}
+              className={`rounded-full px-3.5 py-1.5 text-sm font-semibold ${
+                count === n
+                  ? "bg-caption text-ink"
+                  : "border border-paper/25 text-paper hover:bg-paper/10"
+              }`}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="mt-3 flex items-center gap-3">
         <button
           type="button"
@@ -61,18 +92,27 @@ export function VideoCalculator({ signedIn = false }: { signedIn?: boolean }) {
       </dl>
 
       {signedIn ? (
-        <>
+        <form action={action}>
+          <input type="hidden" name="quantity" value={count} />
           <button
-            type="button"
-            disabled
-            className="mt-6 w-full rounded-full bg-caption px-5 py-3.5 font-semibold text-ink disabled:opacity-60"
+            type="submit"
+            disabled={pending}
+            className="mt-6 w-full rounded-full bg-caption px-5 py-3.5 font-semibold text-ink hover:bg-paper disabled:opacity-60"
           >
-            Check out {count} {count === 1 ? "video" : "videos"}
+            {pending ? "Opening checkout…" : `Buy ${count} ${noun}`}
           </button>
+          {state?.error && (
+            <p
+              role="alert"
+              className="mt-3 rounded-lg bg-red-50 px-3.5 py-2.5 text-sm text-red-800"
+            >
+              {state.error}
+            </p>
+          )}
           <p className="mt-3 text-center text-xs text-paper/60">
-            Online checkout opens soon. We&apos;ll email you when it&apos;s live.
+            Paid videos stay on your account. Each project you send uses one.
           </p>
-        </>
+        </form>
       ) : (
         <>
           <Link

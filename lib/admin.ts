@@ -4,6 +4,7 @@ import { db } from "@/db";
 import {
   clip,
   deliverable,
+  order,
   project,
   revisionRequest,
   user,
@@ -16,7 +17,7 @@ import { TURNAROUND_DAYS } from "./pricing";
 export const VIEWS = {
   active: { label: "To do", statuses: ["submitted", "editing", "revision_requested"] },
   delivered: { label: "Delivered", statuses: ["delivered"] },
-  drafts: { label: "Not submitted", statuses: ["draft"] },
+  drafts: { label: "Not paid yet", statuses: ["draft"] },
 } satisfies Record<string, { label: string; statuses: ProjectStatus[] }>;
 
 export type View = keyof typeof VIEWS;
@@ -144,6 +145,17 @@ export async function getAdminProject(projectId: string) {
       .orderBy(desc(revisionRequest.createdAt)),
   ]);
 
+  const [paidBy] = row.project.orderId
+    ? await db.select().from(order).where(eq(order.id, row.project.orderId))
+    : [];
+
   const open = revisions.find((r) => !r.resolved) ?? null;
-  return { ...row, clips, deliverables, revisions, dueAt: dueDate(row.project, open) };
+  return {
+    ...row,
+    clips,
+    deliverables,
+    revisions,
+    order: paidBy ?? null,
+    dueAt: dueDate(row.project, open),
+  };
 }

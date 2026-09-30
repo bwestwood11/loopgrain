@@ -1,0 +1,2 @@
+ALTER TABLE "project" ADD COLUMN "order_id" text;--> statement-breakpoint
+ALTER TABLE "project" ADD CONSTRAINT "project_order_id_order_id_fk" FOREIGN KEY ("order_id") REFERENCES "public"."order"("id") ON DELETE no action ON UPDATE no action;

@@ -2,12 +2,20 @@
 
 import { and, count, desc, eq } from "drizzle-orm";
 import { refresh } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { clip, deliverable, project, revisionRequest } from "@/db/schema";
 import { getSession } from "@/lib/session";
 import { deleteObject, objectExists, presignUpload } from "@/lib/r2";
-import { MAX_CLIP_BYTES, MAX_CLIP_SECONDS, MAX_CLIPS_PER_PROJECT } from "@/lib/pricing";
+import {
+  MAX_CLIP_BYTES,
+  MAX_CLIP_SECONDS,
+  MAX_CLIPS_PER_PROJECT,
+  MAX_VIDEOS_PER_ORDER,
+} from "@/lib/pricing";
+import { applyCredit } from "@/lib/orders";
+import { createCheckout } from "@/lib/stripe";
 
 // Every action re-checks the session and ownership: Server Actions are
 // reachable by direct POST, not only through the dashboard UI.
@@ -123,23 +131,81 @@ export async function removeClip(clipId: string) {
   refresh();
 }
 
-export async function submitProject(projectId: string): Promise<FormState> {
-  const uid = await userId();
-  const p = await ownedProject(uid, projectId);
-  if (!p || p.status !== "draft") return { error: "This project can't be submitted." };
+async function siteUrl() {
+  return (await headers()).get("origin") ?? process.env.BETTER_AUTH_URL;
+}
 
+const CHECKOUT_ERROR = "Checkout isn't available right now. Please try again in a minute.";
+
+async function uploadedClipCount(projectId: string) {
   const [{ n }] = await db
     .select({ n: count() })
     .from(clip)
     .where(and(eq(clip.projectId, projectId), eq(clip.uploaded, true)));
+  return n;
+}
+
+// Buy several videos up front. They sit on the customer's balance until each
+// project is sent to the editor.
+export async function buyVideos(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await getSession();
+  if (!session) throw new Error("Not signed in");
+  const quantity = Number(formData.get("quantity"));
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_VIDEOS_PER_ORDER) {
+    return { error: `Choose between 1 and ${MAX_VIDEOS_PER_ORDER} videos.` };
+  }
+
+  let url: string | null;
+  try {
+    url = await createCheckout({
+      user: session.user,
+      quantity,
+      returnUrl: `${await siteUrl()}/dashboard`,
+    });
+  } catch (err) {
+    console.error(err);
+    return { error: CHECKOUT_ERROR };
+  }
+  if (!url) return { error: CHECKOUT_ERROR };
+  redirect(url);
+}
+
+// Pay for this one project. It moves to "submitted" (and into the admin queue)
+// only once Stripe confirms payment, in fulfillCheckout.
+export async function startCheckout(projectId: string): Promise<FormState> {
+  const session = await getSession();
+  if (!session) throw new Error("Not signed in");
+  const p = await ownedProject(session.user.id, projectId);
+  if (!p || p.status !== "draft") return { error: "This project has already been paid for." };
+  const n = await uploadedClipCount(projectId);
   if (n === 0) return { error: "Upload at least one clip first." };
 
-  // Drop rows for uploads that never finished so the editor only sees real files.
-  await db.delete(clip).where(and(eq(clip.projectId, projectId), eq(clip.uploaded, false)));
-  await db
-    .update(project)
-    .set({ status: "submitted", submittedAt: new Date() })
-    .where(eq(project.id, projectId));
+  let url: string | null;
+  try {
+    url = await createCheckout({
+      user: session.user,
+      quantity: 1,
+      project: { id: projectId, title: p.title, clipCount: n },
+      returnUrl: `${await siteUrl()}/dashboard/projects/${projectId}`,
+    });
+  } catch (err) {
+    console.error(err);
+    return { error: CHECKOUT_ERROR };
+  }
+  if (!url) return { error: CHECKOUT_ERROR };
+  redirect(url);
+}
+
+// Send the project using one of the customer's prepaid videos.
+export async function sendWithCredit(projectId: string): Promise<FormState> {
+  const uid = await userId();
+  const p = await ownedProject(uid, projectId);
+  if (!p || p.status !== "draft") return { error: "This project was already sent." };
+  if ((await uploadedClipCount(projectId)) === 0)
+    return { error: "Upload at least one clip first." };
+  if (!(await applyCredit(uid, projectId))) {
+    return { error: "You don't have any prepaid videos left. Pay for this one to send it." };
+  }
   refresh();
 }
 

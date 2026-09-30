@@ -6,7 +6,7 @@ import { DownloadAllButton } from "@/components/download-all-button";
 import { StatusPill } from "@/components/project-status";
 import { getAdminProject } from "@/lib/admin";
 import { formatBytes, formatDate, formatDuration } from "@/lib/format";
-import { MAX_CLIP_SECONDS } from "@/lib/pricing";
+import { formatUSD, MAX_CLIP_SECONDS } from "@/lib/pricing";
 import { presignDownload } from "@/lib/r2";
 import { requireAdmin } from "@/lib/session";
 
@@ -16,7 +16,7 @@ export default async function AdminProjectPage(props: PageProps<"/admin/projects
   const data = await getAdminProject(id);
   if (!data) notFound();
 
-  const { project: p, customer, clips, deliverables, revisions, dueAt } = data;
+  const { project: p, customer, clips, deliverables, revisions, order, dueAt } = data;
   const openRevisions = revisions.filter((r) => !r.resolved);
 
   // Signing is local crypto, no network calls, so it's fine to do per render.
@@ -38,7 +38,7 @@ export default async function AdminProjectPage(props: PageProps<"/admin/projects
         <StatusPill status={p.status} />
       </div>
       <p className="mt-2 text-sm text-slate">
-        {p.submittedAt ? `Submitted ${formatDate(p.submittedAt)}` : "Not submitted yet"}
+        {p.paidAt ? `Paid and submitted ${formatDate(p.paidAt)}` : "Not paid yet"}
         {dueAt && ` · Due ${formatDate(dueAt)}`}
       </p>
 
@@ -166,6 +166,22 @@ export default async function AdminProjectPage(props: PageProps<"/admin/projects
             <a href={`mailto:${customer.email}`} className="text-sm text-cobalt hover:underline">
               {customer.email}
             </a>
+          </div>
+          <div>
+            <h2 className="font-semibold">Payment</h2>
+            <p className="mt-2 text-sm text-slate">
+              {p.paidAt
+                ? `Paid ${formatDate(p.paidAt)}${
+                    order
+                      ? order.quantity > 1
+                        ? ` from a ${order.quantity}-video order${order.amountCents !== null ? ` (${formatUSD(order.amountCents / 100)})` : ""}`
+                        : order.amountCents !== null
+                          ? ` · ${formatUSD(order.amountCents / 100)}`
+                          : ""
+                      : ""
+                  }`
+                : "Not paid. It won't reach your queue until the customer pays."}
+            </p>
           </div>
           <div>
             <h2 className="font-semibold">Brief</h2>
