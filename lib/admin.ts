@@ -11,7 +11,7 @@ import {
   type Project,
   type ProjectStatus,
 } from "@/db/schema";
-import { addDays } from "./format";
+import { addBusinessDays } from "./format";
 import { TURNAROUND_DAYS } from "./pricing";
 
 export const VIEWS = {
@@ -38,10 +38,10 @@ export type CustomerGroup = {
 // turnaround after it was submitted.
 function dueDate(p: Project, openRevision: { createdAt: Date } | null) {
   if (p.status === "revision_requested" && openRevision) {
-    return addDays(openRevision.createdAt, TURNAROUND_DAYS);
+    return addBusinessDays(openRevision.createdAt, TURNAROUND_DAYS);
   }
   if ((p.status === "submitted" || p.status === "editing") && p.submittedAt) {
-    return addDays(p.submittedAt, TURNAROUND_DAYS);
+    return addBusinessDays(p.submittedAt, TURNAROUND_DAYS);
   }
   return null;
 }

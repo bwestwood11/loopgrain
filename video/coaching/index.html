@@ -1,0 +1,410 @@
+<!doctype html>
+<!-- Coaching spot: "Doing it all alone". Planner language: a phone-notification pile-up, a
+     draining energy meter, iris wipe onto the coach, a hand-drawn circle, a ruled session-notes
+     card that ticks itself off, rising colour-bar wipe, "90 days later" stamp, before/after stat
+     cards, paper end card with a booking CTA. -->
+<html lang="en" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="assets/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Anton"; src: url("assets/fonts/anton.woff2") format("woff2"); font-weight: 400; }
+      @font-face { font-family: "Inter"; src: url("assets/fonts/inter.woff2") format("woff2"); font-weight: 100 900; }
+      @font-face { font-family: "Fraunces"; src: url("assets/fonts/fraunces-italic.woff2") format("woff2"); font-weight: 300 900; font-style: italic; }
+      @font-face { font-family: "JetBrains Mono"; src: url("assets/fonts/jetbrains-mono.woff2") format("woff2"); font-weight: 100 800; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1920px; overflow: hidden; background: #000; }
+      #root {
+        position: relative; width: 100%; height: 100%; overflow: hidden; background: #000;
+        font-family: "Inter", sans-serif; color: #fff;
+        --sage: #1f4d43; --sage2: #2c6b5c; --mint: #cfeadd; --cream: #fbf6ea; --amber: #ffb238;
+        --ink: #11201b; --rose: #ff5d4d;
+      }
+      .anton { font-family: "Anton", sans-serif; font-weight: 400; text-transform: uppercase; letter-spacing: 0.01em; }
+      .mono { font-family: "JetBrains Mono", monospace; }
+      .hand { font-family: "Fraunces", serif; font-style: italic; font-weight: 600; }
+      .cam { position: absolute; inset: 0; overflow: hidden; }
+      .cam video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      .shade { position: absolute; left: 0; right: 0; bottom: 0; height: 1050px;
+        background: linear-gradient(to top, rgba(10, 22, 18, 0.9) 22%, rgba(10, 22, 18, 0)); }
+      .topshade { position: absolute; left: 0; right: 0; top: 0; height: 700px;
+        background: linear-gradient(to bottom, rgba(10, 22, 18, 0.45), rgba(10, 22, 18, 0)); opacity: 0; }
+
+      /* ---- Shot A: overwhelm ---- */
+      #clock { position: absolute; left: 70px; top: 76px; display: flex; align-items: center; gap: 16px; opacity: 0;
+        padding: 12px 24px; border-radius: 999px; background: rgba(17, 32, 27, 0.78); font-size: 34px; font-weight: 700; }
+      #clock i { width: 16px; height: 16px; border-radius: 50%; background: var(--rose); }
+      #stack { position: absolute; left: 60px; right: 60px; top: 170px; height: 440px; }
+      .note { position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: center; gap: 26px; opacity: 0;
+        padding: 20px 28px; border-radius: 36px; background: rgba(251, 246, 234, 0.96); color: var(--ink);
+        box-shadow: 0 24px 50px -18px rgba(0, 0, 0, 0.55); transform-origin: 50% 0; }
+      .note .ic { flex: none; display: grid; place-items: center; width: 84px; height: 84px; border-radius: 22px; font-size: 44px; font-weight: 800; color: #fff; }
+      .note .tx { min-width: 0; }
+      .note .app { display: block; font-size: 26px; font-weight: 600; color: #6b7671; text-transform: uppercase; letter-spacing: 0.06em; }
+      .note .msg { display: block; margin-top: 4px; font-size: 40px; font-weight: 700; line-height: 1.15; white-space: nowrap; }
+      .note .when { margin-left: auto; align-self: flex-start; font-size: 26px; font-weight: 600; color: #8a948f; }
+      #more { position: absolute; right: 70px; top: 76px; padding: 10px 24px; border-radius: 999px; opacity: 0;
+        background: var(--rose); font-size: 34px; font-weight: 800; }
+
+      #hook { position: absolute; left: 70px; right: 40px; top: 1150px; }
+      #hook .l { display: block; overflow: hidden; }
+      #hook .l span { display: block; font-size: 200px; line-height: 1.02; white-space: nowrap; }
+      #hook .l2 { position: relative; display: inline-block; margin-top: 6px; }
+      #hook .l2 span { position: relative; z-index: 1; color: var(--ink); padding: 0 22px; }
+      #hook .hl { position: absolute; left: 0; right: 0; top: 18%; bottom: 6%; background: var(--amber); transform-origin: 0 50%; transform: skewX(-8deg); }
+
+      #energy { position: absolute; left: 70px; right: 70px; top: 1700px; opacity: 0; }
+      #energy .row { display: flex; justify-content: space-between; align-items: baseline; font-size: 38px; font-weight: 800; letter-spacing: 0.04em; }
+      #energy .pct { font-variant-numeric: tabular-nums; color: var(--amber); }
+      #energy .meter { position: relative; margin-top: 14px; height: 34px; border-radius: 12px; border: 5px solid rgba(255, 255, 255, 0.9); padding: 4px; }
+      #energy .meter::after { content: ""; position: absolute; right: -18px; top: 7px; width: 10px; height: 14px; border-radius: 0 4px 4px 0; background: rgba(255, 255, 255, 0.9); }
+      #energy .meter i { display: block; height: 100%; border-radius: 6px; background: var(--amber); transform-origin: 0 50%; }
+
+      #iris { position: absolute; left: 455px; top: 610px; width: 3000px; height: 3000px; margin: -1500px 0 0 -1500px; border-radius: 50%;
+        background: var(--sage); }
+
+      /* ---- Shot B: the session ---- */
+      #ring { position: absolute; inset: 0; }
+      #ringLabel { position: absolute; left: 560px; top: 290px; font-size: 58px; color: var(--amber); opacity: 0; transform: rotate(-6deg);
+        text-shadow: 0 4px 18px rgba(0, 0, 0, 0.45); white-space: nowrap; }
+
+      #coach { position: absolute; left: 0; top: 1420px; width: 1010px; opacity: 0; }
+      #coach .slab { padding: 30px 44px 34px 70px; background: var(--sage); border-radius: 0 44px 44px 0; box-shadow: 0 30px 60px -25px rgba(0, 0, 0, 0.6); }
+      #coach .tag { display: inline-block; padding: 8px 20px; border-radius: 999px; background: var(--amber); color: var(--ink); font-size: 30px; font-weight: 800; letter-spacing: 0.08em; }
+      #coach .name { display: block; margin-top: 18px; font-size: 128px; line-height: 1.12; color: var(--cream); white-space: nowrap; }
+      #coach .meta { display: block; margin-top: 18px; font-size: 34px; font-weight: 600; color: var(--mint); }
+      #coach .meta b { color: var(--amber); font-variant-numeric: tabular-nums; }
+
+      #notes { position: absolute; left: 70px; right: 70px; top: 1140px; padding: 40px 48px 46px 110px; opacity: 0;
+        background: var(--cream); color: var(--ink); border-radius: 18px; transform-origin: 50% 100%;
+        box-shadow: 0 40px 70px -30px rgba(0, 0, 0, 0.7);
+        background-image: repeating-linear-gradient(to bottom, transparent 0 101px, rgba(31, 77, 67, 0.18) 101px 104px);
+        background-position: 0 70px; }
+      #notes::before { content: ""; position: absolute; left: 76px; top: 0; bottom: 0; width: 4px; background: rgba(255, 93, 77, 0.55); }
+      #notes .head { display: flex; justify-content: space-between; font-size: 30px; font-weight: 700; color: var(--sage2); letter-spacing: 0.06em; }
+      #notes ul { list-style: none; margin-top: 24px; }
+      #notes li { position: relative; display: flex; align-items: center; gap: 30px; height: 104px; font-size: 54px; font-weight: 700; white-space: nowrap; }
+      #notes .box { position: relative; flex: none; width: 60px; height: 60px; border: 5px solid var(--sage); border-radius: 12px; }
+      #notes .box svg { position: absolute; left: -8px; top: -22px; overflow: visible; }
+      #notes .t { position: relative; isolation: isolate; }
+      #notes .t .hl2 { position: absolute; left: -8px; right: -8px; top: 30%; bottom: 4%; background: var(--amber); z-index: -1; transform-origin: 0 50%; opacity: 0.85; }
+
+      .bar { position: absolute; left: 0; right: 0; height: 2100px; top: 1920px; }
+      #b1 { background: var(--amber); }
+      #b2 { background: var(--sage); }
+      #b3 { background: var(--cream); }
+
+      /* ---- Shot C: 90 days later ---- */
+      #stamp { position: absolute; left: 60px; top: 110px; padding: 18px 34px 14px; opacity: 0; background: var(--amber); color: var(--ink);
+        font-size: 104px; line-height: 1; border-radius: 12px; transform: rotate(-4deg); box-shadow: 0 20px 40px -18px rgba(0, 0, 0, 0.6); }
+      #stamp small { display: block; font-family: "Inter", sans-serif; font-size: 28px; font-weight: 800; letter-spacing: 0.1em; margin-bottom: 6px; color: var(--sage); }
+
+      #stats { position: absolute; left: 60px; top: 400px; width: 500px; display: flex; flex-direction: column; gap: 26px; }
+      .stat { padding: 26px 32px 28px; border-radius: 30px; opacity: 0; background: rgba(17, 32, 27, 0.86); border-left: 12px solid var(--amber);
+        box-shadow: 0 30px 50px -28px rgba(0, 0, 0, 0.7); }
+      .stat .k { font-size: 28px; font-weight: 800; letter-spacing: 0.08em; color: var(--mint); }
+      .stat .v { display: flex; align-items: baseline; gap: 22px; margin-top: 22px; }
+      .stat .old { position: relative; font-size: 64px; line-height: 1.1; color: rgba(255, 255, 255, 0.55); }
+      .stat .old i { position: absolute; left: -6px; right: -6px; top: 52%; height: 8px; background: var(--rose); transform-origin: 0 50%; transform: rotate(-8deg) scaleX(0); }
+      .stat .arrow { font-size: 50px; color: var(--amber); }
+      .stat .new { font-size: 116px; line-height: 1.1; color: var(--cream); font-variant-numeric: tabular-nums; }
+      .stat svg { display: block; margin-top: 10px; overflow: visible; }
+      .dots { display: flex; gap: 16px; margin-top: 16px; }
+      .dots i { width: 62px; height: 62px; border-radius: 50%; border: 5px solid rgba(255, 255, 255, 0.35); }
+      .dots i.on { background: var(--amber); border-color: var(--amber); }
+
+      #payoff { position: absolute; left: 60px; right: 40px; top: 1260px; }
+      #payoff .l { display: block; overflow: hidden; }
+      #payoff .l span { display: block; font-size: 100px; line-height: 1.1; white-space: nowrap; }
+      #payoff .l2 span { font-size: 150px; }
+      #payoff .l2 { position: relative; display: inline-block; margin-top: 10px; }
+      #payoff .l2 span { position: relative; z-index: 1; color: var(--ink); padding: 0 20px; }
+      #payoff .hl { position: absolute; left: 0; right: 0; top: 14%; bottom: 4%; background: var(--amber); transform-origin: 0 50%; transform: skewX(-8deg); }
+
+      /* ---- End card ---- */
+      #end { position: absolute; left: 0; right: 0; top: 700px; bottom: 0; opacity: 0; }
+      #end .paper { position: absolute; inset: 0; background: var(--cream); border-radius: 70px 70px 0 0; box-shadow: 0 -30px 60px -30px rgba(0, 0, 0, 0.6); }
+      #end .blob { position: absolute; right: -160px; top: -120px; width: 560px; height: 560px; border-radius: 50%; background: var(--mint); }
+      #end .inner { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; padding-top: 120px; color: var(--ink); }
+      #end .cal { position: relative; width: 150px; height: 150px; border-radius: 30px; background: var(--sage); overflow: hidden; opacity: 0; }
+      #end .cal::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 40px; background: var(--amber); }
+      #end .cal svg { position: absolute; left: 0; top: 0; }
+      #end .word { margin-top: 40px; font-size: 230px; line-height: 0.9; white-space: nowrap; }
+      #end .word span { display: inline-block; opacity: 0; }
+      #end .word .a { color: var(--sage); }
+      #end .word .b { color: var(--amber); -webkit-text-stroke: 4px var(--ink); paint-order: stroke fill; }
+      #end .sub { margin-top: 26px; font-size: 38px; font-weight: 800; letter-spacing: 0.14em; color: var(--sage2); opacity: 0; }
+      #end .cta { display: flex; align-items: center; gap: 26px; margin-top: 70px; padding: 34px 58px; border-radius: 999px; opacity: 0;
+        background: var(--sage); color: var(--cream); font-size: 54px; font-weight: 800; white-space: nowrap; box-shadow: 0 30px 50px -25px rgba(31, 77, 67, 0.8); }
+      #end .cta svg { flex: none; }
+      #end .fine { margin-top: 36px; font-size: 34px; font-weight: 600; color: #5d6b66; opacity: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="13" data-width="1080" data-height="1920">
+      <div id="camA" class="cam">
+        <video id="vidA" class="clip" src="assets/segA.mp4" data-start="0" data-duration="3.5" data-track-index="0" data-color-grading="{&quot;preset&quot;:&quot;skin-soft&quot;,&quot;intensity&quot;:0.55,&quot;adjust&quot;:{&quot;contrast&quot;:0.1,&quot;temperature&quot;:-0.07,&quot;saturation&quot;:-0.18},&quot;details&quot;:{&quot;vignette&quot;:0.28}}" muted playsinline></video>
+      </div>
+      <div id="camB" class="cam">
+        <video id="vidB" class="clip" src="assets/segB.mp4" data-start="3.5" data-duration="3.5" data-track-index="0" data-color-grading="{&quot;preset&quot;:&quot;skin-soft&quot;,&quot;intensity&quot;:0.6,&quot;adjust&quot;:{&quot;contrast&quot;:0.08,&quot;temperature&quot;:0.06,&quot;vibrance&quot;:0.06},&quot;details&quot;:{&quot;vignette&quot;:0.16}}" muted playsinline></video>
+      </div>
+      <div id="camC" class="cam">
+        <video id="vidC" class="clip" src="assets/segC.mp4" data-start="7" data-duration="6" data-track-index="0" data-color-grading="{&quot;preset&quot;:&quot;skin-soft&quot;,&quot;intensity&quot;:0.6,&quot;adjust&quot;:{&quot;exposure&quot;:0.05,&quot;contrast&quot;:0.1,&quot;temperature&quot;:0.07,&quot;vibrance&quot;:0.1},&quot;details&quot;:{&quot;vignette&quot;:0.16}}" muted playsinline></video>
+      </div>
+
+      <div class="topshade" id="topshade"></div>
+      <div class="shade"></div>
+
+      <!-- Shot A -->
+      <div id="clock" class="mono"><i id="dot"></i><span>11:48 PM · TUESDAY</span></div>
+      <div id="stack" data-layout-allow-overlap>
+        <div class="note" id="n1" data-layout-allow-overlap><span class="ic" style="background:#ff5d4d">!</span><span class="tx"><span class="app">Invoices</span><span class="msg">#204 is 14 days overdue</span></span><span class="when">now</span></div>
+        <div class="note" id="n2" data-layout-allow-overlap><span class="ic" style="background:#34c759">3</span><span class="tx"><span class="app">Phone</span><span class="msg">3 missed calls</span></span><span class="when">now</span></div>
+        <div class="note" id="n3" data-layout-allow-overlap><span class="ic" style="background:#2f7df6">M</span><span class="tx"><span class="app">Client</span><span class="msg">Can we move to 7am?</span></span><span class="when">now</span></div>
+        <div class="note" id="n4" data-layout-allow-overlap><span class="ic" style="background:#8e5cf7">$</span><span class="tx"><span class="app">Payroll</span><span class="msg">Due tomorrow, 9:00</span></span><span class="when">now</span></div>
+        <div class="note" id="n5" data-layout-allow-overlap><span class="ic" style="background:#ffb238">@</span><span class="tx"><span class="app">Mail</span><span class="msg">86 unread emails</span></span><span class="when">now</span></div>
+      </div>
+      <div id="more">+23 more</div>
+
+      <div id="hook">
+        <span class="l"><span class="anton" id="h1">Doing it all</span></span>
+        <span class="l l2"><i class="hl" id="hHl"></i><span class="anton" id="h2">alone.</span></span>
+      </div>
+
+      <div id="energy">
+        <div class="row"><span>ENERGY</span><span class="pct" id="pct">18%</span></div>
+        <div class="meter"><i id="ebar"></i></div>
+      </div>
+
+      <!-- Shot B -->
+      <svg id="ring" viewBox="0 0 1080 1920" width="1080" height="1920" aria-hidden="true">
+        <path id="ringPath" fill="none" stroke="#ffb238" stroke-width="11" stroke-linecap="round" />
+        <path id="ringTail" d="M 600 385 Q 585 420 580 462" fill="none" stroke="#ffb238" stroke-width="9" stroke-linecap="round" />
+      </svg>
+      <div id="ringLabel" class="hand">the turning point</div>
+
+      <div id="coach">
+        <div class="slab">
+          <span class="tag">YOUR COACH</span>
+          <span class="name anton">Elena Marsh</span>
+          <span class="meta">Business &amp; leadership coach · <b>&#9733; 4.9</b> · <b id="reviews">0</b> reviews</span>
+        </div>
+      </div>
+
+      <div id="notes">
+        <div class="head mono"><span>SESSION 1</span><span>THE PLAN</span></div>
+        <ul>
+          <li><span class="box"><svg width="80" height="80" viewBox="0 0 80 80"><path class="chk" d="M 12 44 L 32 64 L 76 8" fill="none" stroke="#2c6b5c" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span class="t">Hire help for the inbox</span></li>
+          <li><span class="box"><svg width="80" height="80" viewBox="0 0 80 80"><path class="chk" d="M 12 44 L 32 64 L 76 8" fill="none" stroke="#2c6b5c" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span class="t">Raise prices 20%</span></li>
+          <li><span class="box"><svg width="80" height="80" viewBox="0 0 80 80"><path class="chk" d="M 12 44 L 32 64 L 76 8" fill="none" stroke="#2c6b5c" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" /></svg></span><span class="t"><i class="hl2" id="nHl"></i>Fridays off. Always.</span></li>
+        </ul>
+      </div>
+
+      <!-- Shot C -->
+      <div id="stamp" class="anton"><small>AFTER 12 SESSIONS</small>90 days later</div>
+
+      <div id="stats">
+        <div class="stat" id="st1">
+          <div class="k">HOURS A WEEK</div>
+          <div class="v"><span class="old anton">70<i></i></span><span class="arrow anton">&rarr;</span><span class="new anton" id="hrs">70</span></div>
+        </div>
+        <div class="stat" id="st2">
+          <div class="k">REVENUE</div>
+          <div class="v"><span class="new anton" id="rev">+0%</span></div>
+          <svg width="420" height="80" viewBox="0 0 420 80" aria-hidden="true"><polyline id="spark" points="0,70 60,64 120,66 180,50 240,44 300,30 360,18 420,4" fill="none" stroke="#ffb238" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </div>
+        <div class="stat" id="st3">
+          <div class="k">TEAM</div>
+          <div class="v"><span class="old anton">1<i></i></span><span class="arrow anton">&rarr;</span><span class="new anton" id="team">1</span></div>
+          <div class="dots"><i class="on"></i><i id="d2"></i><i id="d3"></i><i id="d4"></i></div>
+        </div>
+      </div>
+
+      <div id="payoff">
+        <span class="l"><span class="anton" id="p1">Running the business.</span></span>
+        <span class="l l2"><i class="hl" id="pHl"></i><span class="anton" id="p2">Not run by it.</span></span>
+      </div>
+
+      <div id="end">
+        <div class="paper"></div>
+        <div class="blob"></div>
+        <div class="inner">
+          <div class="cal"><svg width="150" height="150" viewBox="0 0 150 150" aria-hidden="true"><path id="calChk" d="M 44 92 L 66 114 L 108 66" fill="none" stroke="#fbf6ea" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" /></svg></div>
+          <div class="word anton" id="word"></div>
+          <div class="sub">BUSINESS &amp; LEADERSHIP COACHING</div>
+          <div class="cta">Book a free discovery call
+            <svg id="arrow" width="60" height="44" viewBox="0 0 60 44" aria-hidden="true"><path d="M 4 22 H 52 M 34 4 L 54 22 L 34 40" fill="none" stroke="#ffb238" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          </div>
+          <div class="fine">1:1 coaching for business owners. Link in bio.</div>
+        </div>
+      </div>
+
+      <i id="b1" class="bar"></i><i id="b2" class="bar"></i><i id="b3" class="bar"></i>
+      <div id="iris"></div>
+    </div>
+
+    <script>
+      (function () {
+        const tl = gsap.timeline({ paused: true });
+        const $ = (s) => document.querySelector(s);
+        const $$ = (s) => [...document.querySelectorAll(s)];
+
+        // ---- static setup ----
+        const dash = (el) => {
+          const L = el.getTotalLength();
+          el.setAttribute("stroke-dasharray", L);
+          el.setAttribute("stroke-dashoffset", L);
+          return L;
+        };
+
+        // Hand-drawn ring around the coach's head: an ellipse with a gentle, repeatable wobble
+        // that overshoots its start, like a marker loop.
+        const cx = 455, cy = 600, rx = 175, ry = 215;
+        let d = "";
+        for (let i = 0; i <= 64; i++) {
+          const t = -Math.PI / 2 - 0.35 + (i / 64) * (Math.PI * 2 + 0.55);
+          const w = 1 + 0.035 * Math.sin(t * 3 + 0.8) + 0.02 * Math.sin(t * 7);
+          const x = cx + rx * w * Math.cos(t), y = cy + ry * w * Math.sin(t);
+          d += (i ? " L " : "M ") + x.toFixed(1) + " " + y.toFixed(1);
+        }
+        $("#ringPath").setAttribute("d", d);
+        dash($("#ringPath"));
+        dash($("#ringTail"));
+        $$(".chk").forEach(dash);
+        dash($("#spark"));
+        dash($("#calChk"));
+
+        $("#word").innerHTML = [..."CLEAR"].map((c) => `<span class="a">${c}</span>`).join("") + [..."PATH"].map((c) => `<span class="b">${c}</span>`).join("");
+
+        gsap.set(["#clock", "#more", "#energy", "#ringLabel", "#coach", "#notes", "#stamp", "#end", "#hook", "#payoff"], { opacity: 0 });
+        gsap.set(".note", { opacity: 0, y: -160 });
+        gsap.set(["#h1", "#h2", "#p1", "#p2"], { yPercent: 110 });
+        gsap.set(["#hHl", "#pHl"], { scaleX: 0 });
+        gsap.set("#iris", { scale: 0 });
+
+        // ---------- Shot A (0 - 3.5): the overwhelm ----------
+        tl.fromTo("#camA", { scale: 1.28 }, { scale: 1.06, duration: 0.9, ease: "expo.out" }, 0);
+        tl.to("#camA", { scale: 1.13, duration: 2.6, ease: "none" }, 0.9);
+        tl.to("#topshade", { opacity: 1, duration: 0.3 }, 0);
+
+        tl.fromTo("#clock", { opacity: 0, y: -30 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 0.05);
+        for (let i = 0; i < 8; i++) tl.fromTo("#dot", { opacity: 1 }, { keyframes: [{ opacity: 0.2, duration: 0.18 }, { opacity: 1, duration: 0.18 }], immediateRender: false }, 0.2 + i * 0.4);
+
+        // Notifications land faster and faster; each new one pushes the pile down and back.
+        const arrive = [0.15, 0.42, 0.64, 0.82, 0.97];
+        const notes = ["#n1", "#n2", "#n3", "#n4", "#n5"];
+        notes.forEach((sel, i) => {
+          tl.fromTo(sel, { opacity: 0, y: -160, scale: 1 }, { opacity: 1, y: 0, duration: 0.3, ease: "back.out(1.6)", immediateRender: false }, arrive[i]);
+          gsap.set(sel, { zIndex: 10 + i });
+          for (let j = 0; j < i; j++) {
+            const depth = i - j;
+            tl.to(notes[j], { y: [0, 112, 212, 300][Math.min(depth, 3)], scale: 1 - 0.04 * depth, opacity: depth > 3 ? 0 : 1 - 0.14 * depth, duration: 0.28, ease: "power3.out" }, arrive[i]);
+          }
+        });
+        tl.fromTo("#more", { opacity: 0, scale: 0.4, rotation: -10 }, { opacity: 1, scale: 1, rotation: 3, duration: 0.3, ease: "back.out(3)" }, 1.15);
+        tl.fromTo("#stack", { x: 0 }, { keyframes: [{ x: -10, duration: 0.05 }, { x: 10, duration: 0.05 }, { x: -6, duration: 0.05 }, { x: 0, duration: 0.05 }], immediateRender: false }, 1.15);
+
+        // Hook.
+        tl.set("#hook", { opacity: 1 }, 1.3);
+        tl.to("#h1", { yPercent: 0, duration: 0.45, ease: "expo.out" }, 1.3);
+        tl.to("#h2", { yPercent: 0, duration: 0.45, ease: "expo.out" }, 1.55);
+        tl.to("#hHl", { scaleX: 1, duration: 0.35, ease: "power3.inOut" }, 1.72);
+
+        // Energy meter drains and turns red.
+        tl.fromTo("#energy", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 2.1);
+        const en = { v: 18 };
+        tl.fromTo(en, { v: 18 }, { v: 3, duration: 1.0, ease: "power1.in", immediateRender: false, onUpdate: () => ($("#pct").textContent = Math.round(en.v) + "%") }, 2.2);
+        tl.fromTo("#ebar", { scaleX: 0.18 }, { scaleX: 0.03, duration: 1.0, ease: "power1.in" }, 2.2);
+        tl.to("#ebar", { backgroundColor: "#ff5d4d", duration: 0.2 }, 2.8);
+        tl.to("#pct", { color: "#ff5d4d", duration: 0.2 }, 2.8);
+
+        // Out: notifications swipe away, iris closes on the coach's position.
+        tl.to(notes, { x: -1200, duration: 0.3, ease: "power3.in", stagger: 0.03 }, 3.0);
+        tl.to(["#more", "#clock"], { opacity: 0, duration: 0.15 }, 3.05);
+        tl.to(["#hook", "#energy"], { opacity: 0, y: 40, duration: 0.2, ease: "power2.in" }, 3.1);
+        tl.to("#iris", { scale: 1, duration: 0.3, ease: "power3.in" }, 3.2);
+
+        // ---------- Shot B (3.5 - 7.0): the session ----------
+        tl.set("#topshade", { opacity: 0 }, 3.5);
+        tl.to("#iris", { scale: 0, duration: 0.4, ease: "power3.out" }, 3.5);
+        tl.fromTo("#camB", { scale: 1.14 }, { scale: 1.03, duration: 0.7, ease: "expo.out" }, 3.5);
+        tl.to("#camB", { scale: 1.09, duration: 2.8, ease: "none" }, 4.2);
+
+        tl.to("#ringPath", { attr: { "stroke-dashoffset": 0 }, duration: 0.5, ease: "power2.inOut" }, 3.8);
+        tl.to("#ringTail", { attr: { "stroke-dashoffset": 0 }, duration: 0.18, ease: "power2.out" }, 4.25);
+        tl.fromTo("#ringLabel", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 4.3);
+        tl.to(["#ring", "#ringLabel"], { opacity: 0, duration: 0.2 }, 5.0);
+
+        tl.fromTo("#coach", { opacity: 0, x: -1010 }, { opacity: 1, x: 0, duration: 0.45, ease: "expo.out" }, 3.85);
+        const rv = { n: 0 };
+        tl.fromTo(rv, { n: 0 }, { n: 212, duration: 0.7, ease: "power2.out", immediateRender: false, onUpdate: () => ($("#reviews").textContent = Math.round(rv.n)) }, 4.05);
+        tl.to("#coach", { x: -1010, duration: 0.3, ease: "power3.in" }, 4.95);
+
+        // Session notes: the card flips up and ticks itself off.
+        tl.fromTo("#notes", { opacity: 0, y: 200, rotation: 4 }, { opacity: 1, y: 0, rotation: -2, duration: 0.45, ease: "back.out(1.4)" }, 5.1);
+        $$(".chk").forEach((el, i) => {
+          tl.to(el, { attr: { "stroke-dashoffset": 0 }, duration: 0.22, ease: "power2.out" }, 5.5 + i * 0.38);
+          tl.fromTo($$("#notes li")[i], { scale: 1 }, { keyframes: [{ scale: 1.04, duration: 0.08 }, { scale: 1, duration: 0.14 }], immediateRender: false, transformOrigin: "0 50%" }, 5.55 + i * 0.38);
+        });
+        tl.fromTo("#nHl", { scaleX: 0 }, { scaleX: 1, duration: 0.3, ease: "power3.inOut" }, 6.35);
+
+        // Rising colour bars wipe into C.
+        tl.to("#notes", { y: -260, rotation: -8, opacity: 0, duration: 0.3, ease: "power3.in" }, 6.75);
+        tl.fromTo("#b1", { y: 0 }, { y: -4200, duration: 0.55, ease: "power2.inOut", immediateRender: false }, 6.72);
+        tl.fromTo("#b2", { y: 0 }, { y: -4200, duration: 0.55, ease: "power2.inOut", immediateRender: false }, 6.78);
+        tl.fromTo("#b3", { y: 0 }, { y: -4200, duration: 0.55, ease: "power2.inOut", immediateRender: false }, 6.84);
+
+        // ---------- Shot C (7.0 - 13.0): 90 days later ----------
+        tl.fromTo("#camC", { scale: 1.16 }, { scale: 1.03, duration: 0.8, ease: "expo.out" }, 7.0);
+        tl.to("#camC", { scale: 1.1, duration: 3.0, ease: "none" }, 7.8);
+        tl.set("#topshade", { opacity: 1 }, 7.0);
+
+        tl.fromTo("#stamp", { opacity: 0, scale: 1.8, rotation: -14 }, { opacity: 1, scale: 1, rotation: -4, duration: 0.35, ease: "back.out(2.2)" }, 7.2);
+
+        tl.fromTo(".stat", { opacity: 0, x: -140 }, { opacity: 1, x: 0, duration: 0.4, ease: "expo.out", stagger: 0.24 }, 7.5);
+        // Hours: strike the old number, count down.
+        tl.to("#st1 .old i", { scaleX: 1, duration: 0.2, ease: "power2.out" }, 7.8);
+        const hr = { v: 70 };
+        tl.fromTo(hr, { v: 70 }, { v: 42, duration: 0.9, ease: "power2.out", immediateRender: false, onUpdate: () => ($("#hrs").textContent = Math.round(hr.v)) }, 7.85);
+        // Revenue: count up, sparkline draws.
+        const rev = { v: 0 };
+        tl.fromTo(rev, { v: 0 }, { v: 38, duration: 0.9, ease: "power2.out", immediateRender: false, onUpdate: () => ($("#rev").textContent = "+" + Math.round(rev.v) + "%") }, 8.05);
+        tl.to("#spark", { attr: { "stroke-dashoffset": 0 }, duration: 0.9, ease: "power1.inOut" }, 8.05);
+        // Team: dots fill one by one.
+        tl.to("#st3 .old i", { scaleX: 1, duration: 0.2, ease: "power2.out" }, 8.3);
+        ["#d2", "#d3", "#d4"].forEach((sel, i) => {
+          tl.to(sel, { backgroundColor: "#ffb238", borderColor: "#ffb238", duration: 0.12 }, 8.4 + i * 0.22);
+          tl.fromTo(sel, { scale: 1 }, { keyframes: [{ scale: 1.35, duration: 0.1 }, { scale: 1, duration: 0.15 }], immediateRender: false }, 8.4 + i * 0.22);
+          tl.call(() => ($("#team").textContent = String(i + 2)), null, 8.4 + i * 0.22);
+        });
+        tl.call(() => ($("#team").textContent = "1"), null, 8.39);
+
+        tl.to(".stat", { opacity: 0, x: -120, duration: 0.25, ease: "power2.in", stagger: 0.06 }, 9.7);
+        tl.to("#stamp", { opacity: 0, y: -40, duration: 0.2 }, 9.75);
+
+        // Payoff.
+        tl.set("#payoff", { opacity: 1 }, 9.9);
+        tl.to("#p1", { yPercent: 0, duration: 0.45, ease: "expo.out" }, 9.9);
+        tl.to("#p2", { yPercent: 0, duration: 0.45, ease: "expo.out" }, 10.1);
+        tl.to("#pHl", { scaleX: 1, duration: 0.3, ease: "power3.inOut" }, 10.25);
+        tl.to("#payoff", { opacity: 0, y: -60, duration: 0.2, ease: "power2.in" }, 10.85);
+
+        // End card: paper sheet rises, calendar checks, wordmark, CTA.
+        tl.set("#end", { opacity: 1 }, 10.9);
+        tl.fromTo("#end", { yPercent: 100 }, { yPercent: 0, duration: 0.5, ease: "power4.out" }, 10.9);
+        tl.fromTo("#end .blob", { scale: 0 }, { scale: 1, duration: 0.6, ease: "back.out(1.4)" }, 11.05);
+        tl.fromTo("#end .cal", { opacity: 0, scale: 0.5, rotation: -12 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.35, ease: "back.out(2.4)" }, 11.2);
+        tl.to("#calChk", { attr: { "stroke-dashoffset": 0 }, duration: 0.25, ease: "power2.out" }, 11.45);
+        tl.fromTo("#word span", { opacity: 0, yPercent: 60 }, { opacity: 1, yPercent: 0, duration: 0.35, ease: "expo.out", stagger: 0.04 }, 11.3);
+        tl.fromTo("#end .sub", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.3 }, 11.7);
+        tl.fromTo("#end .cta", { opacity: 0, y: 40, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "back.out(1.8)" }, 11.85);
+        tl.fromTo("#arrow", { x: 0 }, { keyframes: [{ x: 12, duration: 0.2 }, { x: 0, duration: 0.2 }], repeat: 1, immediateRender: false }, 12.3);
+        tl.fromTo("#end .fine", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 12.1);
+
+        tl.seek(0);
+        window.__timelines["main"] = tl;
+      })();
+    </script>
+  </body>
+</html>

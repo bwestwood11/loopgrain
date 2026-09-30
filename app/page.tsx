@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 import { HeroShowcase } from "@/components/hero-showcase";
 import { EditTimeline } from "@/components/edit-timeline";
 import { VideoCalculator } from "@/components/video-calculator";
@@ -71,8 +72,8 @@ export default function Home() {
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-slate">
               Loopgrain turns the raw clips on your phone into short-form videos with captions,
-              motion graphics, and your branding. You pay per video. No subscription, no
-              editing software, no learning curve.
+              motion graphics, and your branding. You pay per video. No subscription, no editing
+              software, no learning curve.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
@@ -101,8 +102,8 @@ export default function Home() {
           <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
             <h2 className="display max-w-3xl text-5xl sm:text-6xl">What goes into every edit</h2>
             <p className="mt-4 max-w-2xl text-lg text-slate">
-              The things that make people stop, watch, and call you, layered onto every
-              video you order.
+              The things that make people stop, watch, and call you, layered onto every video you
+              order.
             </p>
             <div className="mt-10">
               <EditTimeline />
@@ -134,8 +135,8 @@ export default function Home() {
                 Per video.
               </h2>
               <p className="mt-5 max-w-lg text-lg leading-relaxed text-slate">
-                Every video gets the full edit for {formatUSD(PRICE_PER_VIDEO)}. Order one to try
-                us out or fifty for the quarter. The price doesn&apos;t change and nothing renews.
+                Every video gets the full edit for {formatUSD(PRICE_PER_VIDEO)}. Order one to try us
+                out or fifty for the quarter. The price doesn&apos;t change and nothing renews.
               </p>
               <ul className="mt-6 space-y-2 text-slate">
                 <li>Clips must be under {MAX_CLIP_SECONDS} seconds</li>
@@ -153,8 +154,8 @@ export default function Home() {
             Built for businesses that would rather be running the business
           </h2>
           <p className="mt-4 max-w-2xl text-lg text-slate">
-            If your customers scroll social media, short videos bring them to you. You
-            don&apos;t need to learn to edit to show up there.
+            If your customers scroll social media, short videos bring them to you. You don&apos;t
+            need to learn to edit to show up there.
           </p>
           <ul className="mt-8 flex flex-wrap gap-2">
             {BUSINESSES.map((b) => (
@@ -204,10 +205,7 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="mx-auto flex w-full max-w-6xl flex-wrap justify-between gap-2 px-4 py-8 text-sm text-slate sm:px-6">
-        <span>© {new Date().getFullYear()} Loopgrain</span>
-        <span>Short-form video editing for small businesses</span>
-      </footer>
+      <SiteFooter />
     </>
   );
 }

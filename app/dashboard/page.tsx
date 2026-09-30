@@ -6,7 +6,7 @@ import { availableCredits } from "@/lib/orders";
 import { listProjects, type ProjectSummary } from "@/lib/projects";
 import { requireUser } from "@/lib/session";
 import { fulfillCheckout } from "@/lib/stripe";
-import { addDays, formatDate } from "@/lib/format";
+import { addBusinessDays, formatDate } from "@/lib/format";
 import { formatUSD, MAX_CLIP_SECONDS, PRICE_PER_VIDEO, TURNAROUND_DAYS } from "@/lib/pricing";
 
 export const metadata: Metadata = { title: "Dashboard | Loopgrain" };
@@ -101,7 +101,7 @@ export default async function DashboardPage(props: PageProps<"/dashboard">) {
             <VideoCalculator signedIn initialCount={1} />
             <p className="mt-3 text-sm text-slate">
               Only need one? Start a project and pay when you send it. Delivered within{" "}
-              {TURNAROUND_DAYS} days.
+              {TURNAROUND_DAYS} business days.
             </p>
           </section>
         </aside>
@@ -121,7 +121,7 @@ const STEPS = [
   },
   {
     title: "Get your edit",
-    body: `Your video arrives within ${TURNAROUND_DAYS} days. Ask for changes if anything's off.`,
+    body: `Your video arrives within ${TURNAROUND_DAYS} business days. Ask for changes if anything's off.`,
   },
 ];
 
@@ -202,7 +202,7 @@ function cardCopy(p: ProjectSummary) {
     default:
       return {
         detail: p.submittedAt
-          ? `Expected by ${formatDate(addDays(p.submittedAt, TURNAROUND_DAYS))} · ${clips}`
+          ? `Expected by ${formatDate(addBusinessDays(p.submittedAt, TURNAROUND_DAYS))} · ${clips}`
           : clips,
         cta: "View project",
       };

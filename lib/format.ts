@@ -14,8 +14,13 @@ export function formatDuration(seconds: number | null) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
-export function addDays(date: Date, days: number) {
+// Skips Saturdays and Sundays, so a Friday submission is due Tuesday.
+export function addBusinessDays(date: Date, days: number) {
   const d = new Date(date);
-  d.setDate(d.getDate() + days);
+  let left = days;
+  while (left > 0) {
+    d.setDate(d.getDate() + 1);
+    if (d.getDay() !== 0 && d.getDay() !== 6) left--;
+  }
   return d;
 }

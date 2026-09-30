@@ -6,7 +6,7 @@ import { ClipUploader } from "@/components/clip-uploader";
 import { StatusPill } from "@/components/project-status";
 import { RevisionForm } from "@/components/revision-form";
 import type { Clip, Deliverable, ProjectStatus } from "@/db/schema";
-import { addDays, formatBytes, formatDate, formatDuration } from "@/lib/format";
+import { addBusinessDays, formatBytes, formatDate, formatDuration } from "@/lib/format";
 import { TURNAROUND_DAYS } from "@/lib/pricing";
 import { getProject } from "@/lib/projects";
 import { presignDownload } from "@/lib/r2";
@@ -87,7 +87,7 @@ export default async function ProjectPage(props: PageProps<"/dashboard/projects/
               title={project.status === "editing" ? "Your editor is on it" : "Sent to your editor"}
               body={
                 project.submittedAt
-                  ? `Expect your video by ${formatDate(addDays(project.submittedAt, TURNAROUND_DAYS))}. We'll email you when it's ready.`
+                  ? `Expect your video by ${formatDate(addBusinessDays(project.submittedAt, TURNAROUND_DAYS))}. We'll email you when it's ready.`
                   : "We'll email you when it's ready."
               }
             />

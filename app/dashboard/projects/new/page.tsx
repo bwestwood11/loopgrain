@@ -22,7 +22,7 @@ export default async function NewProjectPage() {
         {credits > 0
           ? ` It uses 1 of your ${credits} prepaid ${credits === 1 ? "video" : "videos"} when you send it.`
           : ` ${formatUSD(PRICE_PER_VIDEO)}, paid when you send it.`}
-        {` Delivered within ${TURNAROUND_DAYS} days.`}
+        {` Delivered within ${TURNAROUND_DAYS} business days.`}
       </p>
       <div className="mt-8 rounded-2xl bg-paper p-6 shadow-[0_1px_0_var(--color-line)] sm:p-8">
         <NewProjectForm />
