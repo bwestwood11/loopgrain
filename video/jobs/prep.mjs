@@ -1,6 +1,6 @@
 // Gets a customer's raw clips ready to edit.
 //
-//   node video/jobs/prep.mjs <job>            e.g. node video/jobs/prep.mjs acme-barber
+//   node video/jobs/prep.mjs <job>            <job> is the folder name or the project id
 //   node video/jobs/prep.mjs <job> --crop     cover-crop landscape clips instead of blur-fitting
 //   node video/jobs/prep.mjs <job> --force    redo clips that were already prepped
 //
@@ -22,16 +22,18 @@ import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { resolveJob } from "./job.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
-const job = args.find((a) => !a.startsWith("--"));
+const typed = args.find((a) => !a.startsWith("--"));
 const crop = args.includes("--crop");
 const force = args.includes("--force");
-if (!job) {
+if (!typed) {
   console.error("Usage: node video/jobs/prep.mjs <job> [--crop] [--force]");
   process.exit(1);
 }
+const job = resolveJob(here, typed);
 
 const W = 1080;
 const H = 1920;

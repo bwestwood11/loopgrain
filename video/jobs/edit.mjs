@@ -31,6 +31,7 @@ import { createHash } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { resolveJob } from "./job.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const shared = join(here, "..", "shared");
@@ -40,11 +41,12 @@ const W = 1080;
 const H = 1920;
 
 const args = process.argv.slice(2);
-const job = args.find((a) => !a.startsWith("--"));
-if (!job) {
+const typed = args.find((a) => !a.startsWith("--"));
+if (!typed) {
   console.error("Usage: node video/jobs/edit.mjs <job> [--preview | --render] [--force]");
   process.exit(1);
 }
+const job = resolveJob(here, typed);
 const dir = join(here, job);
 const manifestPath = join(dir, "manifest.json");
 if (!existsSync(manifestPath)) {

@@ -214,4 +214,4 @@ if (failed) {
   console.log("Re-run the same command to retry the failed ones.");
   process.exit(1);
 }
-console.log(`Fill in the brand at the bottom of brief.md, then:\n\n  npm run video:prep -- ${job}`);
+console.log(`Fill in the brand at the bottom of brief.md, then:\n\n  npm run video:prep -- ${p.id.slice(0, 8)}`);
