@@ -1,0 +1,30 @@
+<!-- Backyard plan for the intro overlay. 1080x1920 coordinates. Shapes draw themselves in
+     document order; class "thin" or "accent" restyles a stroke, "dim" a label. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920">
+  <!-- lot / fence line -->
+  <rect x="120" y="560" width="840" height="940" />
+  <!-- house -->
+  <rect x="120" y="560" width="840" height="180" />
+  <path class="thin" d="M 120 740 L 300 560 M 300 740 L 480 560 M 480 740 L 660 560 M 660 740 L 840 560 M 840 740 L 960 620" />
+  <!-- outdoor kitchen (L counter under the patio) -->
+  <rect class="thin" x="160" y="770" width="330" height="150" />
+  <path d="M 185 795 L 465 795 L 465 895" />
+  <!-- steps down to the pool deck -->
+  <path class="thin" d="M 560 790 L 760 790 M 560 830 L 760 830 M 560 870 L 760 870 M 560 910 L 760 910" />
+  <!-- pool deck and pool -->
+  <rect class="thin" x="520" y="950" width="400" height="500" rx="10" />
+  <rect x="570" y="1000" width="300" height="400" rx="26" />
+  <path class="accent" d="M 610 1110 q 25 -18 50 0 t 50 0 t 50 0 t 50 0 M 610 1200 q 25 -18 50 0 t 50 0 t 50 0 t 50 0 M 610 1290 q 25 -18 50 0 t 50 0 t 50 0 t 50 0" />
+  <!-- trees -->
+  <circle class="thin" cx="270" cy="1090" r="85" />
+  <circle class="thin" cx="230" cy="1380" r="65" />
+  <circle class="thin" cx="420" cy="1300" r="50" />
+  <!-- dimension line -->
+  <path class="thin" d="M 120 1560 L 960 1560 M 120 1540 L 120 1580 M 960 1540 L 960 1580" />
+  <text x="540" y="665" text-anchor="middle">House</text>
+  <text x="325" y="955" text-anchor="middle">Outdoor kitchen</text>
+  <text x="720" y="1490" text-anchor="middle">Pool deck</text>
+  <text x="300" y="1220" text-anchor="middle">Turf</text>
+  <text x="940" y="1530" text-anchor="end">Fence</text>
+  <text class="dim" x="540" y="1610" text-anchor="middle">84'-0"</text>
+</svg>

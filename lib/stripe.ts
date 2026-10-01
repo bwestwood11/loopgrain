@@ -40,7 +40,15 @@ export async function createCheckout({ user, quantity, project, returnUrl }: Che
         ),
       );
     for (const { sessionId } of stale) {
-      const previous = await stripe().checkout.sessions.retrieve(sessionId!);
+      // A session from the other mode (a cs_test_ one after going live) doesn't
+      // exist for this key, and there's nothing to expire, so skip it.
+      let previous: Stripe.Checkout.Session;
+      try {
+        previous = await stripe().checkout.sessions.retrieve(sessionId!);
+      } catch (err) {
+        if (err instanceof Stripe.errors.StripeInvalidRequestError && err.code === "resource_missing") continue;
+        throw err;
+      }
       if (previous.status === "open") await stripe().checkout.sessions.expire(previous.id);
     }
   }

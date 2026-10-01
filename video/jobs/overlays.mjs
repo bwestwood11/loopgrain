@@ -11,7 +11,13 @@
 //     { "type": "checklist", "at": 5, "title": "The plan", "items": ["Hire help", "Raise prices", "Fridays off"] },
 //     { "type": "circle", "at": 3.8, "x": 455, "y": 600, "label": "the turning point" },  // x/y in the 1080x1920 frame
 //     { "type": "stamp", "at": 7.2, "text": "90 days later", "small": "After 12 sessions" },
-//     { "type": "notifications", "at": 0.1, "items": [{ "app": "Phone", "msg": "3 missed calls" }, { "app": "Mail", "msg": "86 unread" }] }
+//     { "type": "notifications", "at": 0.1, "items": [{ "app": "Phone", "msg": "3 missed calls" }, { "app": "Mail", "msg": "86 unread" }] },
+//     { "type": "freeze", "at": 8.7, "caption": "Pool deck · Austin, TX" },    // flash, the frame freezes and drops into a tilted photo
+//     { "type": "intro", "at": 0, "kicker": "Plan 01 · Backyard", "word": "Design", "drawing": "blueprint.svg" },
+//         // full-frame brand-grid opener that wipes up into the footage; "drawing" is an optional SVG
+//         // fragment in the job folder (1080x1920 coordinates) whose shapes draw themselves in
+//     { "type": "tour", "at": 1.45, "stops": [{ "label": "Yard", "at": 1.6 }, { "label": "Pool deck", "at": 5.9 }, { "label": "Kitchen", "at": 11.4 }] }
+//         // progress tracker that lights each stop at its time; it steps aside during freeze overlays
 //   ]
 //
 // Every overlay takes "at" (seconds on the cut's timeline), an optional "duration" and an
@@ -59,7 +65,7 @@ export const OVERLAY_CSS = `
       .ov-title .l span { display: block; line-height: 1.04; white-space: nowrap; color: #fff; text-shadow: 0 8px 30px rgba(0, 0, 0, 0.45); }
       .ov-title .mark { position: relative; display: inline-block; margin-top: 6px; }
       .ov-title .mark span { position: relative; z-index: 1; padding: 0 22px; color: var(--accent-text); text-shadow: none; }
-      .ov-title .mark i { position: absolute; left: 0; right: 0; top: 16%; bottom: 6%; background: var(--accent); transform-origin: 0 50%; transform: skewX(-8deg); }
+      .ov-title .mark i { position: absolute; left: 14px; right: 14px; top: 16%; /* inset so the skewed corners stay inside the reveal mask */ bottom: 6%; background: var(--accent); transform-origin: 0 50%; transform: skewX(-8deg); }
 
       .ov-lower { left: 0; max-width: 1010px; }
       .ov-lower .slab { padding: 30px 50px 34px 70px; background: var(--paper); color: var(--ink); border-radius: 0 44px 44px 0;
@@ -119,12 +125,62 @@ export const OVERLAY_CSS = `
       .ov-notes .tx { min-width: 0; }
       .ov-notes .app { display: block; font-size: 26px; font-weight: 600; color: #454d49; text-transform: uppercase; letter-spacing: 0.06em; }
       .ov-notes .msg { display: block; margin-top: 4px; font-size: 40px; font-weight: 700; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .ov-notes .when { margin-left: auto; align-self: flex-start; font-size: 26px; font-weight: 600; color: #454d49; }`;
+      .ov-notes .when { margin-left: auto; align-self: flex-start; font-size: 26px; font-weight: 600; color: #454d49; }
+
+      .ov-freeze { inset: 0; }
+      .ov-freeze .scrim { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.55); opacity: 0; }
+      .ov-freeze .pol { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; background: #fff; }
+      .ov-freeze .pol img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      .ov-freeze .pcap { position: absolute; left: -34px; right: -34px; top: 100%; height: 190px; display: flex; align-items: center; justify-content: center;
+        background: #fff; opacity: 0; }
+      .ov-freeze .pcap span { font-family: "Fraunces", serif; font-style: italic; font-weight: 600; font-size: 84px; color: #1d1d1d; white-space: nowrap; }
+      .ov-freeze .fl { position: absolute; inset: 0; background: #fff; opacity: 0; }
+
+      /* Intro sits above everything, captions and hook included, until it wipes away. */
+      .ov-intro { inset: 0; z-index: 8; background-color: var(--paper);
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.07) 2px, transparent 2px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.07) 2px, transparent 2px),
+          linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+        background-size: 216px 216px, 216px 216px, 54px 54px, 54px 54px; }
+      .ov-intro svg { position: absolute; inset: 0; overflow: visible; }
+      .ov-intro [data-draw] { fill: none; stroke: var(--ink); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+      .ov-intro [data-draw].thin { stroke-width: 3; opacity: 0.7; }
+      .ov-intro [data-draw].accent { stroke: var(--accent); stroke-width: 4; opacity: 0.85; }
+      .ov-intro [data-label] { fill: var(--accent); font: 700 28px "JetBrains Mono", monospace; letter-spacing: 0.06em; text-transform: uppercase; }
+      .ov-intro [data-label].dim { fill: var(--ink); opacity: 0.8; }
+      .ov-intro .head { position: absolute; left: 120px; color: var(--ink); }
+      .ov-intro .head small { display: block; font: 700 30px "JetBrains Mono", monospace; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+      .ov-intro .head b { display: block; margin-top: 18px; font: 400 150px/1.15 "Anton", sans-serif; text-transform: uppercase; letter-spacing: 0.01em; white-space: nowrap; }
+      .ov-edge { position: absolute; left: 0; right: 0; top: 0; height: 26px; z-index: 9; background: var(--accent); opacity: 1;
+        box-shadow: 0 0 40px color-mix(in srgb, var(--accent) 80%, transparent); }
+
+      .ov-tour { left: 150px; right: 150px; height: 116px; display: flex; border-radius: 34px;
+        background: color-mix(in srgb, var(--paper) 90%, transparent); box-shadow: 0 24px 50px -20px rgba(0, 0, 0, 0.6); }
+      .ov-tour .track, .ov-tour .fill { position: absolute; top: 37px; height: 5px; border-radius: 3px; }
+      .ov-tour .track { background: color-mix(in srgb, var(--ink) 30%, transparent); }
+      .ov-tour .fill { background: var(--accent); transform-origin: 0 50%; }
+      .ov-tour .stop { position: relative; flex: 1; padding-top: 24px; text-align: center; }
+      .ov-tour .stop b { position: relative; z-index: 1; display: block; width: 32px; height: 32px; margin: 0 auto; border-radius: 50%;
+        border: 5px solid color-mix(in srgb, var(--ink) 65%, transparent); background: var(--paper); }
+      .ov-tour .stop span { display: block; margin-top: 12px; font: 800 26px/1 "Inter", sans-serif; letter-spacing: 0.1em; text-transform: uppercase;
+        color: var(--ink); opacity: 0.7; white-space: nowrap; }`;
+
+// @font-face rules for fonts the overlays ask edit.mjs to ship.
+export const FONT_FACES = {
+  "fraunces-italic.woff2": `@font-face { font-family: "Fraunces"; src: url("assets/fonts/fraunces-italic.woff2") format("woff2"); font-weight: 300 900; font-style: italic; }`,
+  "jetbrains-mono.woff2": `@font-face { font-family: "JetBrains Mono"; src: url("assets/fonts/jetbrains-mono.woff2") format("woff2"); font-weight: 100 800; }`,
+};
 
 /**
  * @returns {{ html: string[], tl: string[], init: string[], fonts: Set<string>, usesFmt: boolean, problems: string[] }}
  */
-export function buildOverlays(list, { cutEnd, captions, hook, esc, round }) {
+// still(at) returns { src, grade } for a frame of the cut at that time (freeze needs it);
+// readJobFile(name) returns a file from the job folder as text (intro drawings).
+export function buildOverlays(list, { cutEnd, captions, hook, esc, round, still, readJobFile, brand }) {
+  // GSAP can only tween real colours, not var() or color-mix(), so tweens use the brand hexes.
+  const rgba = (hex, a) => { const h = hex.replace("#", ""); const v = (i) => parseInt(h.length === 3 ? h[i] + h[i] : h.slice(i * 2, i * 2 + 2), 16); return `rgba(${v(0)}, ${v(1)}, ${v(2)}, ${a})`; };
   const html = [];
   const tl = [];
   const init = [];
@@ -153,12 +209,16 @@ export function buildOverlays(list, { cutEnd, captions, hook, esc, round }) {
     if (o.items.length > max) throw new Error(`${where}: at most ${max} items fit.`);
   };
 
+  // Freeze photos cover the middle of the frame; the tour tracker steps aside for them.
+  const freezes = (list ?? []).filter((o) => o.type === "freeze").map((o) => ({ start: Number(o.at), end: Number(o.at) + (o.duration ?? 2.0) }));
+
   for (const [n, o] of (list ?? []).entries()) {
     const where = `Overlay ${n + 1} (${o.type})`;
     const id = `o${n}`;
     need(o, "at", where);
     const t = Number(o.at);
     let dur, top, bottom;
+    let fullFrame = false;
 
     switch (o.type) {
       case "title": {
@@ -295,7 +355,6 @@ export function buildOverlays(list, { cutEnd, captions, hook, esc, round }) {
       case "circle": {
         need(o, "x", where);
         need(o, "y", where);
-        fonts.add("fraunces-italic.woff2");
         const rx = o.rx ?? 170;
         const ry = o.ry ?? 210;
         dur = o.duration ?? 1.8;
@@ -359,22 +418,134 @@ export function buildOverlays(list, { cutEnd, captions, hook, esc, round }) {
         break;
       }
 
+      case "freeze": {
+        // The frame under "at" flashes, freezes, and shrinks into a tilted photo over the
+        // darkened footage, which keeps playing behind it. Then the photo flies off.
+        // Small enough and lifted enough that photo + caption clear the platform UI at the bottom.
+        const scale = o.scale ?? 0.56;
+        const lift = -120;
+        dur = o.duration ?? 2.0;
+        top = 960 + lift - 960 * scale;
+        bottom = 960 + lift + 960 * scale + (o.caption ? 190 * scale : 0);
+        const frame = still(t);
+        const shadow = (spread, a) => `0 0 0 ${spread}px #fff, 0 50px 90px rgba(0, 0, 0, ${a})`;
+        html.push(
+          `<div id="${id}" class="ov ov-freeze"><div class="scrim" id="${id}s"></div>` +
+            `<div class="pol" id="${id}p"><img src="${frame.src}" alt=""${frame.grade ? ` data-color-grading="${esc(JSON.stringify(frame.grade))}"` : ""} />` +
+            (o.caption ? `<div class="pcap" id="${id}c" data-layout-allow-overflow><span>${esc(o.caption)}</span></div>` : "") +
+            `</div><div class="fl" id="${id}f"></div></div>`,
+        );
+        from(`#${id}`, { opacity: 0 }, { opacity: 1, duration: 0.01 }, t);
+        from(`#${id}f`, { opacity: 0 }, { keyframes: [{ opacity: 1, duration: 0.04 }, { opacity: 0, duration: 0.35, ease: "power2.out" }] }, t);
+        from(`#${id}p`, { scale: 1, rotation: 0, y: 0, boxShadow: shadow(0, 0) }, { scale, rotation: -4, y: lift, boxShadow: shadow(34, 0.55), duration: 0.5, ease: "power3.inOut" }, t + 0.3);
+        from(`#${id}s`, { opacity: 0 }, { opacity: 1, duration: 0.4 }, t + 0.3);
+        if (o.caption) from(`#${id}c`, { opacity: 0 }, { opacity: 1, duration: 0.25 }, t + 0.6);
+        from(`#${id}p`, { y: lift, rotation: -4 }, { y: -1600, rotation: -14, duration: 0.4, ease: "power3.in" }, t + dur - 0.4);
+        from(`#${id}s`, { opacity: 1 }, { opacity: 0, duration: 0.3 }, t + dur - 0.3);
+        from(`#${id}`, { opacity: 1 }, { opacity: 0, duration: 0.01 }, t + dur);
+        break;
+      }
+
+      case "intro": {
+        // Brand grid with a kicker and one big word; an optional drawing strokes itself in; then a
+        // glowing accent edge wipes the whole card upward to reveal the footage.
+        need(o, "word", where);
+        fonts.add("jetbrains-mono.woff2");
+        fullFrame = true;
+        dur = o.duration ?? 1.4;
+        top = 0;
+        bottom = 1920;
+        const wipeAt = t + dur - 0.45;
+        let drawing = "";
+        if (o.drawing) {
+          // Tag every shape to draw itself and every <text> as a label; shapes keep their own classes (thin, accent).
+          drawing = readJobFile(o.drawing)
+            .replace(/<\/?svg[^>]*>/g, "")
+            .replace(/<!--[\s\S]*?-->/g, "")
+            .replace(/<(path|rect|circle|ellipse|line|polyline|polygon)\b/g, '<$1 pathLength="1" data-draw')
+            .replace(/<text\b/g, "<text data-label")
+            .trim();
+        }
+        html.push(
+          `<div id="${id}" class="ov ov-intro" style="opacity: 1">` +
+            `<div class="head" id="${id}h" style="top: ${o.y ?? 300}px"><small data-layout-allow-overlap>${esc(o.kicker ?? "")}</small><b data-layout-allow-overlap style="font-size: ${fit(o.word, 150, 840, 0.5)}px">${esc(o.word)}</b></div>` +
+            (drawing ? `<svg viewBox="0 0 1080 1920" width="1080" height="1920" aria-hidden="true">${drawing}</svg>` : "") +
+            `</div><i id="${id}e" class="ov-edge"></i>`,
+        );
+        init.push(
+          `gsap.set("#${id} [data-draw]", { attr: { "stroke-dasharray": 1, "stroke-dashoffset": 1 } });`,
+          `gsap.set("#${id} [data-label]", { opacity: 0 });`,
+          `gsap.set("#${id}e", { y: 2000 });`,
+        );
+        const drawWindow = Math.max(0.3, wipeAt - t - 0.5);
+        tl.push(`gsap.utils.toArray("#${id} [data-draw]").forEach((el, i, all) => tl.fromTo(el, { attr: { "stroke-dashoffset": 1 } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.42, ease: "power2.inOut", immediateRender: false }, ${at(t + 0.05)} + i * ${round(drawWindow)} / Math.max(1, all.length)));`);
+        tl.push(`tl.fromTo("#${id} [data-label]", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.2, stagger: 0.04, immediateRender: false }, ${at(t + 0.45)});`);
+        from(`#${id}h`, { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.3, ease: "power3.out" }, t + 0.05);
+        from(`#${id}`, { clipPath: "inset(0% 0% 0% 0%)" }, { clipPath: "inset(0% 0% 100% 0%)", duration: 0.42, ease: "power3.inOut" }, wipeAt);
+        // The edge parks off-frame below before the wipe and above after it, so it needs no opacity.
+        from(`#${id}e`, { y: 2000 }, { y: -80, duration: 0.42, ease: "power3.inOut" }, wipeAt);
+        if (hook && hook.end > t && t + dur > 0) problems.push(`${where} covers the hook box; start the hook after the intro or drop it.`);
+        break;
+      }
+
+      case "tour": {
+        // Stops light up in order and the line fills between them. Hidden while a freeze photo is up.
+        if (!Array.isArray(o.stops) || o.stops.length < 2 || o.stops.length > 4) throw new Error(`${where}: "stops" needs 2 to 4 { label, at } entries.`);
+        o.stops.forEach((st, k) => {
+          need(st, "label", `${where} stop ${k + 1}`);
+          need(st, "at", `${where} stop ${k + 1}`);
+          if (k && st.at <= o.stops[k - 1].at) throw new Error(`${where}: stop times must increase.`);
+        });
+        const n = o.stops.length;
+        dur = o.duration ?? round(cutEnd - t - 0.05);
+        // Above the captions when there are captions; otherwise just above the platform UI.
+        top = o.y ?? (captions ? 190 : 1330);
+        bottom = top + 116;
+        const edge = `${round(50 / n)}%`;
+        html.push(
+          `<div id="${id}" class="ov ov-tour" style="top: ${top}px">` +
+            `<i class="track" style="left: ${edge}; right: ${edge}"></i><i class="fill" id="${id}f" style="left: ${edge}; right: ${edge}"></i>` +
+            o.stops.map((st, k) => `<div class="stop" id="${id}s${k}"><b></b><span>${esc(st.label)}</span></div>`).join("") +
+            `</div>`,
+        );
+        init.push(`gsap.set("#${id}", { opacity: 0, y: 40 });`, `gsap.set("#${id}f", { scaleX: 0 });`);
+        from(`#${id}`, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, t);
+        o.stops.forEach((st, k) => {
+          const ts = Number(st.at);
+          if (k) tl.push(`tl.to("#${id}f", { scaleX: ${round(k / (n - 1))}, duration: 0.4, ease: "power2.inOut" }, ${at(ts - 0.3)});`);
+          from(`#${id}s${k} b`, { backgroundColor: brand.paper, borderColor: rgba(brand.ink, 0.65) }, { backgroundColor: brand.accent, borderColor: brand.accent, duration: 0.15 }, ts);
+          from(`#${id}s${k} b`, { scale: 1 }, { keyframes: [{ scale: 1.45, duration: 0.12 }, { scale: 1, duration: 0.2 }] }, ts);
+          from(`#${id}s${k} span`, { opacity: 0.7 }, { opacity: 1, duration: 0.15 }, ts);
+        });
+        for (const f of freezes) {
+          if (f.start < t + dur && f.end > t) {
+            tl.push(`tl.to("#${id}", { opacity: 0, duration: 0.2 }, ${at(f.start - 0.1)});`, `tl.to("#${id}", { opacity: 1, duration: 0.25 }, ${at(f.end + 0.05)});`);
+          }
+        }
+        tl.push(`tl.to("#${id}", { opacity: 0, duration: 0.25 }, ${at(t + dur - 0.25)});`);
+        break;
+      }
+
       default:
-        throw new Error(`${where}: unknown overlay type. Use one of: title, lowerThird, rating, stats, checklist, circle, stamp, notifications.`);
+        throw new Error(`${where}: unknown overlay type. Use one of: title, lowerThird, rating, stats, checklist, circle, stamp, notifications, freeze, intro, tour.`);
     }
 
     // Layout checks: off the end of the cut, under the captions or platform UI, or on top of another overlay.
     const end = t + dur;
     if (end > cutEnd + 0.01) problems.push(`${where} runs to ${end.toFixed(1)}s, past the end of the cut (${cutEnd.toFixed(1)}s).`);
-    if (captions && bottom > CAPTION_BAND[0] && top < CAPTION_BAND[1]) problems.push(`${where} sits in the caption band (${Math.round(top)}-${Math.round(bottom)}px). Move it with "y".`);
-    if (bottom > PLATFORM_UI) problems.push(`${where} reaches ${Math.round(bottom)}px; TikTok/Reels UI covers below ~${PLATFORM_UI}px.`);
+    if (!fullFrame && captions && bottom > CAPTION_BAND[0] && top < CAPTION_BAND[1]) problems.push(`${where} sits in the caption band (${Math.round(top)}-${Math.round(bottom)}px). Move it with "y".`);
+    if (!fullFrame && bottom > PLATFORM_UI) problems.push(`${where} reaches ${Math.round(bottom)}px; TikTok/Reels UI covers below ~${PLATFORM_UI}px.`);
     if (hook && t < hook.end && top < hook.bottom && bottom > hook.top) problems.push(`${where} overlaps the hook box while it's on screen.`);
     for (const b of boxes) {
+      // The tour hides itself for freeze photos, so those two never actually meet.
+      if ([b.type, o.type].sort().join("+") === "freeze+tour") continue;
       if (t < b.end && b.start < end && top < b.bottom && b.top < bottom) problems.push(`${where} overlaps ${b.where} on screen.`);
     }
-    boxes.push({ where, start: t, end, top, bottom });
+    boxes.push({ where, type: o.type, start: t, end, top, bottom });
   }
 
+  // OVERLAY_CSS names Fraunces (circle labels), so ship the font whenever overlays are on the page.
+  if (html.length) fonts.add("fraunces-italic.woff2");
   return { html, tl, init, fonts, usesFmt, problems };
 }
 

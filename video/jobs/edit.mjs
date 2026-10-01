@@ -8,7 +8,8 @@
 //   node video/jobs/edit.mjs <job> --force     overwrite edit/index.html even if Studio changed it
 //   node video/jobs/edit.mjs <job> --extra     start video/jobs/<job>/extra.html for custom animation
 //
-// Run prep.mjs first. edit.json is the source of truth for the cut:
+// Run prep.mjs first. Write edit.json to the house style in STYLE.md (reference.edit.json is
+// the worked example). edit.json is the source of truth for the cut:
 //
 //   {
 //     "brand":    { "name": "Main Street Barbers",
@@ -30,7 +31,9 @@
 //         "broll": { "clip": "clip04", "in": 1.0, "offset": 0.4, "duration": 1.5 } },  // muted cutaway
 //       { "clip": "clip02", "in": 0.0, "out": 3.4, "transition": "whip", "motion": "drift", "grade": "warm-daylight" }
 //     ],
-//     "cta":      { "headline": "Book online in 30 seconds", "button": "Book now", "sub": "Link in bio", "seconds": 2.5 },
+//     "cta":      { "headline": "Book online in 30 seconds", "button": "Book now", "sub": "Link in bio", "seconds": 2.5,
+//                   "tag": "Free consult",   // optional pill above the headline
+//                   "tap": true },           // optional: a hand taps the button (needs seconds >= 2.2)
 //     "music":    { "file": "music.mp3", "volume": 0.12 },  // file in the job folder, or null
 //     "overlays": [ { "type": "lowerThird", "at": 3.6, "name": "Dana Ruiz" } ]   // motion graphics: see overlays.mjs
 //   }
@@ -48,7 +51,7 @@ import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, statSync, wr
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveJob } from "./job.mjs";
-import { FMT_SOURCE, OVERLAY_CSS, buildOverlays } from "./overlays.mjs";
+import { FMT_SOURCE, FONT_FACES, OVERLAY_CSS, buildOverlays } from "./overlays.mjs";
 import { EXTRA_TEMPLATE, editRuntime, readExtra } from "./extra.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -80,6 +83,8 @@ const round = (n) => Math.round(n * 1000) / 1000;
 const GRADE_PRESETS = ["neutral", "warm-daylight", "clean-studio", "skin-soft", "food-pop", "night-lift", "muted-editorial", "vintage-wash", "mono-clean", "mono-fade", "soft-boost", "bright-pop", "deep-contrast", "creator-camcorder", "vhs-playback", "home-movie-8mm", "editorial-halftone", "two-ink-print"];
 const MOTIONS = ["push", "drift", "none"];
 const TRANSITIONS = ["cut", "flash", "whip", "zoom", "slash", "iris"];
+// Tapping hand for cta.tap (Material Design "touch_app" icon, Apache 2.0).
+const HAND_SVG = `<svg class="hand" viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" stroke="#111" stroke-width="0.9" stroke-linejoin="round" d="M9 11.24V7.5C9 6.12 10.12 5 11.5 5S14 6.12 14 7.5v3.74c1.21-.81 2-2.18 2-3.74C16 5.01 13.99 3 11.5 3S7 5.01 7 7.5c0 1.56.79 2.93 2 3.74zm9.84 4.63l-4.54-2.26c-.17-.07-.35-.11-.54-.11H13v-6c0-.83-.67-1.5-1.5-1.5S10 6.67 10 7.5v10.74l-3.43-.72c-.08-.01-.15-.03-.24-.03-.31 0-.59.13-.79.33l-.79.8 4.94 4.94c.27.27.65.44 1.06.44h6.79c.75 0 1.33-.55 1.44-1.28l.75-5.27c.01-.07.02-.14.02-.2 0-.62-.38-1.16-.91-1.39z"/></svg>`;
 // Same look as the hero spots: a soft skin preset at partial strength, a touch of contrast and a light vignette.
 const DEFAULT_GRADE = { preset: "skin-soft", intensity: 0.55, adjust: { contrast: 0.08, vibrance: 0.06 }, details: { vignette: 0.16 } };
 
@@ -100,7 +105,8 @@ if (args.includes("--extra")) {
 
 const editPath = join(dir, "edit.json");
 if (!existsSync(editPath)) {
-  const cta = { headline: "Your headline here", button: "Book now", sub: "Link in bio", seconds: 2.5 };
+  // House style (STYLE.md): the end card always gets the tapping hand.
+  const cta = { tag: null, headline: "Your headline here", button: "Book now", sub: "Link in bio", seconds: 3, tap: true };
   const budget = MAX_VIDEO_SECONDS - cta.seconds;
   const segments = [];
   let total = 0;
@@ -283,12 +289,32 @@ const caps = groups.map((g, i) =>
 );
 const hookSeconds = Math.min(edit.hookSeconds ?? 2.5, cutEnd);
 
+// A frame of the cut as a graded still (for the freeze overlay), extracted once with ffmpeg.
+const still = (at) => {
+  const seg = timeline.find((s) => at >= s.start && at < s.start + s.duration) ?? timeline.at(-1);
+  const src = round(seg.in + Math.max(0, at - seg.start));
+  const name = `${seg.clip}-${Math.round(src * 1000)}.jpg`;
+  const file = join(assets, "stills", name);
+  if (!existsSync(file)) {
+    mkdirSync(join(assets, "stills"), { recursive: true });
+    execFileSync("ffmpeg", ["-v", "error", "-y", "-ss", String(src), "-i", join(dir, clipsById.get(seg.clip).file), "-frames:v", "1", "-q:v", "2", file]);
+  }
+  return { src: `assets/stills/${name}`, grade: seg.grade };
+};
+
 const overlays = buildOverlays(edit.overlays, {
   cutEnd,
   captions: edit.captions !== false,
   hook: edit.hook ? { end: hookSeconds, top: 260, bottom: 560 } : null,
   esc,
   round,
+  still,
+  readJobFile: (name) => {
+    const file = join(dir, name);
+    if (!existsSync(file)) throw new Error(`Overlay file not found: ${file}`);
+    return readFileSync(file, "utf8");
+  },
+  brand,
 });
 problems.push(...overlays.problems);
 for (const f of overlays.fonts) copyIfNewer(join(shared, "fonts", f), join(assets, "fonts", f));
@@ -331,9 +357,10 @@ for (const s of timeline) {
   const cam = `#cam${s.i}`;
   const blur = (px) => `blur(${px}px)`;
   switch (s.transition) {
+    // Flash and iris use one keyframed tween per cut so the two halves can't overlap by a rounding error.
     case "flash":
-      if (prev) tw("#flash", { opacity: 0 }, { opacity: 0.9, duration: 0.06, ease: "power1.in" }, c - 0.06);
-      tw("#flash", { opacity: 0.9 }, { opacity: 0, duration: 0.3, ease: "power2.out" }, c);
+      if (prev) tw("#flash", { opacity: 0 }, { keyframes: [{ opacity: 0.9, duration: 0.06, ease: "power1.in" }, { opacity: 0, duration: 0.3, ease: "power2.out" }] }, c - 0.06);
+      else tw("#flash", { opacity: 0.9 }, { opacity: 0, duration: 0.3, ease: "power2.out" }, c);
       break;
     case "whip":
       if (prev) tw(prev, { yPercent: 0, filter: blur(0) }, { yPercent: -22, filter: blur(14), duration: 0.16, ease: "power3.in" }, c - 0.16);
@@ -351,8 +378,8 @@ for (const s of timeline) {
       break;
     }
     case "iris":
-      if (prev) tw("#iris", { scale: 0 }, { scale: 1, duration: 0.22, ease: "power3.in" }, c - 0.22);
-      tw("#iris", { scale: 1 }, { scale: 0, duration: 0.35, ease: "power3.out" }, c);
+      if (prev) tw("#iris", { scale: 0 }, { keyframes: [{ scale: 1, duration: 0.22, ease: "power3.in" }, { scale: 0, duration: 0.35, ease: "power3.out" }] }, c - 0.22);
+      else tw("#iris", { scale: 1 }, { scale: 0, duration: 0.35, ease: "power3.out" }, c);
       break;
   }
 }
@@ -377,9 +404,25 @@ if (edit.cta) {
     `tl.fromTo("#end", { yPercent: 100 }, { yPercent: 0, duration: 0.45, ease: "power4.out" }, ${c});`,
     `tl.fromTo("#end .name", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, ${round(c + 0.25)});`,
     `tl.fromTo("#end .headline", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, ${round(c + 0.4)});`,
-    `tl.fromTo("#end .button", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2)" }, ${round(c + 0.6)});`,
+    `tl.fromTo("#end .button", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2)", immediateRender: false }, ${round(c + 0.6)});`,
     `tl.fromTo("#end .sub", { opacity: 0 }, { opacity: 1, duration: 0.3 }, ${round(c + 0.8)});`,
   );
+  if (edit.cta.tag) {
+    tl.push(`tl.fromTo("#end .tag", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2.5)" }, ${round(c + 0.32)});`);
+  }
+  // A hand slides in and taps the button: a ripple and a squash, so it reads as "tap this".
+  if (edit.cta.tap && edit.cta.button) {
+    if (ctaSeconds < 2.2) problems.push(`cta.tap needs cta.seconds of 2.2 or more (it's ${ctaSeconds}).`);
+    const tap = round(c + 1.5);
+    tl.push(
+      `tl.fromTo("#end .hand", { opacity: 0, x: 220, y: 260 }, { opacity: 1, x: 0, y: 0, duration: 0.45, ease: "power3.out", immediateRender: false }, ${round(c + 1.0)});`,
+      `tl.fromTo("#end .hand", { scale: 1 }, { keyframes: [{ scale: 0.86, duration: 0.1 }, { scale: 1, duration: 0.18 }], immediateRender: false }, ${tap});`,
+      `tl.fromTo("#end .button", { scale: 1 }, { keyframes: [{ scale: 0.93, duration: 0.1 }, { scale: 1.06, duration: 0.16 }, { scale: 1, duration: 0.2 }], immediateRender: false }, ${tap});`,
+      `tl.fromTo("#end .ripple", { opacity: 0.85, scale: 0.95 }, { opacity: 0, scale: 1.4, duration: 0.55, ease: "power2.out", immediateRender: false }, ${round(tap + 0.05)});`,
+      // Then the hand slides back out so it doesn't sit on the sub line.
+      `tl.to("#end .hand", { opacity: 0, x: 160, y: 200, duration: 0.35, ease: "power2.in" }, ${round(tap + 0.55)});`,
+    );
+  }
 }
 
 const html = `<!doctype html>
@@ -392,7 +435,7 @@ const html = `<!doctype html>
     <style>
       @font-face { font-family: "Anton"; src: url("assets/fonts/anton.woff2") format("woff2"); font-weight: 400; }
       @font-face { font-family: "Inter"; src: url("assets/fonts/inter.woff2") format("woff2"); font-weight: 100 900; }
-${overlays.fonts.has("fraunces-italic.woff2") ? `      @font-face { font-family: "Fraunces"; src: url("assets/fonts/fraunces-italic.woff2") format("woff2"); font-weight: 300 900; font-style: italic; }\n` : ""}      * { margin: 0; padding: 0; box-sizing: border-box; }
+${[...overlays.fonts].map((f) => `      ${FONT_FACES[f]}\n`).join("")}      * { margin: 0; padding: 0; box-sizing: border-box; }
       html, body { width: ${W}px; height: ${H}px; overflow: hidden; background: #000; }
       #root {
         position: relative; width: 100%; height: 100%; overflow: hidden; background: #000;
@@ -426,8 +469,14 @@ ${overlays.html.length ? `\n      /* Overlays: above the transitions, below capt
         display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 0 90px; }
       #end .name { font-size: 40px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.7; }
       #end .headline { margin-top: 36px; font-family: "Anton", sans-serif; font-size: 128px; line-height: 1.02; text-transform: uppercase; }
-      #end .button { margin-top: 70px; padding: 34px 72px; border-radius: 999px; background: var(--accent); color: var(--accent-text);
+      #end .tag { margin-top: 30px; padding: 10px 28px; border-radius: 999px; background: var(--accent); color: var(--accent-text);
+        font-size: 32px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+      #end .btnwrap { position: relative; margin-top: 70px; }
+      #end .button { padding: 34px 72px; border-radius: 999px; background: var(--accent); color: var(--accent-text);
         font-size: 50px; font-weight: 900; }
+      #end .ripple { position: absolute; inset: 0; border-radius: 999px; border: 6px solid var(--accent); opacity: 0; }
+      #end .hand { position: absolute; right: 30px; bottom: -110px; width: 150px; height: 150px; opacity: 0; transform-origin: 48% 13%;
+        filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.45)); }
       #end .sub { margin-top: 34px; font-size: 38px; font-weight: 600; opacity: 0.7; }
     </style>
   </head>
@@ -438,8 +487,9 @@ ${brolls.length ? ind(6, brolls) + "\n" : ""}${musicSrc ? `      <audio id="musi
 ${ind(6, caps)}
 ${edit.hook ? `      <div id="hook">${esc(edit.hook)}</div>\n` : ""}${edit.cta ? `      <div id="end">
         <div class="name">${esc(brand.name)}</div>
+        ${edit.cta.tag ? `<div class="tag">${esc(edit.cta.tag)}</div>` : ""}
         <div class="headline">${esc(edit.cta.headline)}</div>
-        ${edit.cta.button ? `<div class="button">${esc(edit.cta.button)}</div>` : ""}
+        ${edit.cta.button ? `<div class="btnwrap"><i class="ripple"></i><div class="button">${esc(edit.cta.button)}</div>${edit.cta.tap ? HAND_SVG : ""}</div>` : ""}
         ${edit.cta.sub ? `<div class="sub">${esc(edit.cta.sub)}</div>` : ""}
       </div>\n` : ""}    </div>
 

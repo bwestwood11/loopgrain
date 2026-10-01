@@ -1,0 +1,171 @@
+{
+  "_notes": [
+    "TEST JOB: the business name, rating, stats, service area and offer are invented for a demo. Never reuse them for a real customer.",
+    "One 15.4s backyard walkthrough, no speech, with a music bed. Segments are contiguous and split only at the footage's own cuts (5.6, 8.13, 11.1, 12.1, 14.1), so the music never jumps and each transition lands on an existing edit.",
+    "Facebook ad: graphics stay between ~300px and ~1600px, inside the 4:5 feed crop and below the Stories header.",
+    "Intro (blueprint.svg) and tour tracker are library overlays now; extra.before-library.html is the hand-written original, kept for reference.",
+    "Source is 360x640, so it's soft at 1080x1920; motion is kept gentle to avoid adding more zoom."
+  ],
+  "brand": {
+    "name": "Fieldline Outdoor",
+    "paper": "#0f3d2e",
+    "ink": "#ffffff",
+    "accent": "#f4c542",
+    "accentText": "#0f3d2e",
+    "highlight": "#f4c542"
+  },
+  "hook": null,
+  "captions": false,
+  "grade": {
+    "preset": "warm-daylight",
+    "intensity": 0.35,
+    "adjust": {
+      "contrast": 0.06,
+      "saturation": -0.08
+    },
+    "details": {
+      "vignette": 0.14
+    }
+  },
+  "motion": "drift",
+  "transition": "cut",
+  "segments": [
+    {
+      "clip": "clip01",
+      "in": 0,
+      "out": 5.6,
+      "motion": "push"
+    },
+    {
+      "clip": "clip01",
+      "in": 5.6,
+      "out": 8.133,
+      "transition": "whip"
+    },
+    {
+      "clip": "clip01",
+      "in": 8.133,
+      "out": 11.1,
+      "transition": "flash"
+    },
+    {
+      "clip": "clip01",
+      "in": 11.1,
+      "out": 12.1,
+      "transition": "zoom"
+    },
+    {
+      "clip": "clip01",
+      "in": 12.1,
+      "out": 14.1,
+      "transition": "whip"
+    },
+    {
+      "clip": "clip01",
+      "in": 14.1,
+      "out": 15.4,
+      "transition": "flash"
+    }
+  ],
+  "overlays": [
+    {
+      "type": "intro",
+      "at": 0,
+      "duration": 1.4,
+      "kicker": "Plan 01 · Backyard",
+      "word": "Design",
+      "drawing": "reference.blueprint.svg"
+    },
+    {
+      "type": "tour",
+      "at": 1.45,
+      "stops": [
+        {
+          "label": "Yard",
+          "at": 1.6
+        },
+        {
+          "label": "Pool deck",
+          "at": 5.9
+        },
+        {
+          "label": "Kitchen",
+          "at": 11.4
+        }
+      ]
+    },
+    {
+      "type": "title",
+      "at": 1.4,
+      "y": 340,
+      "duration": 2.2,
+      "lines": [
+        "Your backyard,",
+        "upgraded."
+      ]
+    },
+    {
+      "type": "stats",
+      "at": 3.6,
+      "y": 340,
+      "duration": 1.95,
+      "items": [
+        {
+          "label": "Backyards built",
+          "to": 250,
+          "suffix": "+"
+        },
+        {
+          "label": "Years in Austin",
+          "to": 12
+        }
+      ]
+    },
+    {
+      "type": "checklist",
+      "at": 5.7,
+      "y": 340,
+      "duration": 2.4,
+      "highlight": false,
+      "title": "Design & Build",
+      "items": [
+        "Decking",
+        "Fencing",
+        "Turf",
+        "Outdoor kitchens"
+      ]
+    },
+    {
+      "type": "freeze",
+      "at": 8.7,
+      "duration": 2.1,
+      "caption": "Pool deck · Austin, TX"
+    },
+    {
+      "type": "stamp",
+      "at": 11.25,
+      "y": 340,
+      "duration": 2.6,
+      "text": "Outdoor kitchen",
+      "small": "Design & Build"
+    },
+    {
+      "type": "rating",
+      "at": 12.2,
+      "y": 570,
+      "duration": 1.75,
+      "score": 4.9,
+      "count": 180,
+      "source": "Google"
+    }
+  ],
+  "cta": {
+    "tag": "Free design consult",
+    "headline": "Your dream backyard",
+    "button": "Get a quote",
+    "sub": "Serving Austin & the Hill Country",
+    "seconds": 3,
+    "tap": true
+  },
+  "music": null
+}
