@@ -11,6 +11,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
+    "video:new": "node video/jobs/new.mjs",
     "video:prep": "node video/jobs/prep.mjs",
     "video:edit": "node video/jobs/edit.mjs"
   },
