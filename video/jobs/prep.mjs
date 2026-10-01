@@ -3,6 +3,10 @@
 //   node video/jobs/prep.mjs <job>            <job> is the folder name or the project id
 //   node video/jobs/prep.mjs <job> --crop     cover-crop landscape clips instead of blur-fitting
 //   node video/jobs/prep.mjs <job> --force    redo clips that were already prepped
+//   node video/jobs/prep.mjs <job> --focus=clip01=0.39
+//                                             cover-crop that clip centred 39% across the source
+//                                             (for a subject off-centre in landscape footage);
+//                                             remembered in manifest.json for later runs
 //
 // Put the downloaded clips in video/jobs/<job>/raw/ first (optionally the customer's
 // brief in video/jobs/<job>/brief.md). For each clip, in sorted filename order, it writes:
@@ -29,6 +33,17 @@ const args = process.argv.slice(2);
 const typed = args.find((a) => !a.startsWith("--"));
 const crop = args.includes("--crop");
 const force = args.includes("--force");
+const focusFlags = Object.fromEntries(
+  args.filter((a) => a.startsWith("--focus=")).map((a) => {
+    const [id, x] = a.slice("--focus=".length).split("=");
+    const n = Number(x);
+    if (!id || !(n >= 0 && n <= 1)) {
+      console.error(`Bad ${a}: use --focus=clip01=0.4 (0 = left edge, 1 = right edge).`);
+      process.exit(1);
+    }
+    return [id, n];
+  }),
+);
 if (!typed) {
   console.error("Usage: node video/jobs/prep.mjs <job> [--crop] [--force]");
   process.exit(1);
@@ -94,12 +109,14 @@ function probe(file) {
 const TONEMAP =
   "zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv,";
 
-function normalize(src, out, meta) {
+function normalize(src, out, meta, focusX) {
   const pre = meta.hdr ? TONEMAP : "";
   const post = `setsar=1,fps=${FPS},format=yuv420p`;
-  const cover = `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H}`;
-  // Anything wider than 4:5 would lose too much to a crop, so it's fit over a blurred fill.
-  const fit = !crop && meta.width / meta.height > 0.8;
+  const cropX = focusX === undefined ? "" : `:x='min(max(iw*${focusX}-${W / 2},0),iw-${W})'`;
+  const cover = `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H}${cropX}`;
+  // Anything wider than 4:5 would lose too much to a centre crop, so it's fit over a
+  // blurred fill, unless a focus point says where to crop.
+  const fit = !crop && focusX === undefined && meta.width / meta.height > 0.8;
   const graph = fit
     ? `[0:v]${pre}split[a][b];[a]${cover},gblur=sigma=40,eq=brightness=-0.08[bg];` +
       `[b]scale=${W}:${H}:force_original_aspect_ratio=decrease[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,${post}[v]`
@@ -115,7 +132,7 @@ function normalize(src, out, meta) {
     "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
     "-movflags", "+faststart", out,
   ]);
-  return fit ? "fit-blur" : "cover-crop";
+  return fit ? "fit-blur" : focusX === undefined ? "cover-crop" : `focus-crop ${focusX}`;
 }
 
 function contactSheets(clipFile, id, duration) {
@@ -162,7 +179,8 @@ for (const [i, name] of sources.entries()) {
   const src = join(rawDir, name);
   const out = join(dir, "clips", `${id}.mp4`);
   const done = previous.find((c) => c.id === id && c.source === name);
-  if (done && !force && [done.file, done.transcript, ...done.sheets].every((f) => existsSync(join(dir, f)))) {
+  const focusX = focusFlags[id] ?? done?.focusX;
+  if (done && !force && done.focusX === focusX && [done.file, done.transcript, ...done.sheets].every((f) => existsSync(join(dir, f)))) {
     console.log(`${id}  ${name}  (already prepped)`);
     clips.push(done);
     continue;
@@ -175,7 +193,7 @@ for (const [i, name] of sources.entries()) {
   }
   console.log(`${id}  ${name}  ${meta.width}x${meta.height} ${meta.fps}fps ${t(meta.duration)}${meta.hdr ? " HDR" : ""}`);
   process.stdout.write("      normalizing… ");
-  const framing = normalize(src, out, meta);
+  const framing = normalize(src, out, meta, focusX);
   process.stdout.write("sheets… ");
   const sheetEvery = contactSheets(out, id, meta.duration);
   process.stdout.write("transcribing… ");
@@ -189,6 +207,7 @@ for (const [i, name] of sources.entries()) {
     file: `clips/${id}.mp4`,
     original: meta,
     framing,
+    ...(focusX === undefined ? {} : { focusX }),
     sheets: readdirSync(join(dir, "sheets")).filter((f) => f.startsWith(`${id}-`)).map((f) => `sheets/${f}`),
     sheetEverySeconds: sheetEvery,
     transcript: `transcripts/${id}.json`,
