@@ -71,7 +71,7 @@ export default async function AdminProjectPage(props: PageProps<"/admin/projects
                       <p className="truncate text-sm font-medium">{c.fileName}</p>
                       <p className="text-xs text-slate">
                         {formatDuration(c.durationSeconds)} · {formatBytes(c.sizeBytes)}
-                        {c.durationSeconds === null && ` · check it's under ${MAX_CLIP_SECONDS}s`}
+                        {c.durationSeconds === null && ` · check it's under ${formatDuration(MAX_CLIP_SECONDS)}`}
                       </p>
                     </div>
                     {clipLinks[i] && (

@@ -10,7 +10,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "video:prep": "node video/jobs/prep.mjs",
+    "video:edit": "node video/jobs/edit.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

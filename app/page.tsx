@@ -4,7 +4,15 @@ import { SiteFooter } from "@/components/site-footer";
 import { HeroShowcase } from "@/components/hero-showcase";
 import { EditTimeline } from "@/components/edit-timeline";
 import { VideoCalculator } from "@/components/video-calculator";
-import { formatUSD, MAX_CLIP_SECONDS, PRICE_PER_VIDEO, TURNAROUND_DAYS } from "@/lib/pricing";
+import { formatMinutes } from "@/lib/format";
+import {
+  formatUSD,
+  MAX_CLIPS_PER_PROJECT,
+  MAX_RAW_SECONDS,
+  MAX_VIDEO_SECONDS,
+  PRICE_PER_VIDEO,
+  TURNAROUND_DAYS,
+} from "@/lib/pricing";
 
 const STEPS = [
   {
@@ -13,7 +21,7 @@ const STEPS = [
   },
   {
     title: "Upload your raw clips",
-    body: `Anything under ${MAX_CLIP_SECONDS} seconds, straight from your phone. Add a note about what you want people to do.`,
+    body: `Up to ${formatMinutes(MAX_RAW_SECONDS)} of footage per video, straight from your phone. Add a note about what you want people to do.`,
   },
   {
     title: "Post the finished videos",
@@ -35,8 +43,12 @@ const BUSINESSES = [
 
 const FAQS = [
   {
-    q: "What if my video is longer than a minute?",
-    a: `We only edit clips under ${MAX_CLIP_SECONDS} secs. Trim it before uploading, or split it into separate clips. Each clip counts as one video.`,
+    q: "How much footage can I send?",
+    a: `Up to ${formatMinutes(MAX_RAW_SECONDS)} of raw footage in up to ${MAX_CLIPS_PER_PROJECT} clips for each video. Retakes and extra angles are fine. We pick the best moments and cut them into one video under ${MAX_VIDEO_SECONDS} seconds.`,
+  },
+  {
+    q: "What if I have more footage than that?",
+    a: `Split it into separate videos, each with its own ${formatMinutes(MAX_RAW_SECONDS)} of footage, or trim the parts you know you won't use before uploading.`,
   },
   {
     q: "Do I need a subscription?",
@@ -90,7 +102,7 @@ export default function Home() {
               </a>
             </div>
             <p className="mt-5 text-sm text-slate">
-              {formatUSD(PRICE_PER_VIDEO)} per video. Clips under {MAX_CLIP_SECONDS} seconds.
+              {formatUSD(PRICE_PER_VIDEO)} per video. Finished videos under {MAX_VIDEO_SECONDS} seconds.
             </p>
           </div>
 
@@ -139,7 +151,8 @@ export default function Home() {
                 out or fifty for the quarter. The price doesn&apos;t change and nothing renews.
               </p>
               <ul className="mt-6 space-y-2 text-slate">
-                <li>Clips must be under {MAX_CLIP_SECONDS} seconds</li>
+                <li>Up to {formatMinutes(MAX_RAW_SECONDS)} of raw footage per video</li>
+                <li>Finished videos under {MAX_VIDEO_SECONDS} seconds</li>
                 <li>Delivered within {TURNAROUND_DAYS} business days</li>
                 <li>Sized for Reels, TikTok, and Shorts</li>
               </ul>

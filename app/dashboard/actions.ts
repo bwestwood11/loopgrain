@@ -1,6 +1,6 @@
 "use server";
 
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, gt, or, sum } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -8,10 +8,13 @@ import { db } from "@/db";
 import { clip, deliverable, project, revisionRequest } from "@/db/schema";
 import { getSession } from "@/lib/session";
 import { deleteObject, objectExists, presignUpload } from "@/lib/r2";
+import { formatMinutes } from "@/lib/format";
 import {
   MAX_CLIP_BYTES,
   MAX_CLIP_SECONDS,
   MAX_CLIPS_PER_PROJECT,
+  MAX_PROJECT_BYTES,
+  MAX_RAW_SECONDS,
   MAX_VIDEOS_PER_ORDER,
 } from "@/lib/pricing";
 import { applyCredit } from "@/lib/orders";
@@ -82,12 +85,32 @@ export async function startClipUpload(projectId: string, meta: ClipMeta): Promis
   }
   const d = meta.durationSeconds;
   if (d !== null && !(d > 0 && d <= MAX_CLIP_SECONDS + 0.5)) {
-    return { ok: false, error: `Clips must be ${MAX_CLIP_SECONDS} seconds or shorter.` };
+    return { ok: false, error: `Clips must be ${formatMinutes(MAX_CLIP_SECONDS)} or shorter.` };
   }
 
-  const [{ n }] = await db.select({ n: count() }).from(clip).where(eq(clip.projectId, projectId));
-  if (n >= MAX_CLIPS_PER_PROJECT) {
-    return { ok: false, error: `A project can hold up to ${MAX_CLIPS_PER_PROJECT} clips.` };
+  // Unfinished uploads count too, so parallel uploads can't race past the
+  // limits, but only recent ones: an abandoned upload shouldn't use up quota.
+  const pendingCutoff = new Date(Date.now() - 6 * 60 * 60 * 1000);
+  const [used] = await db
+    .select({ n: count(), seconds: sum(clip.durationSeconds), bytes: sum(clip.sizeBytes) })
+    .from(clip)
+    .where(
+      and(
+        eq(clip.projectId, projectId),
+        or(eq(clip.uploaded, true), gt(clip.createdAt, pendingCutoff)),
+      ),
+    );
+  if (used.n >= MAX_CLIPS_PER_PROJECT) {
+    return { ok: false, error: `A video can use up to ${MAX_CLIPS_PER_PROJECT} clips.` };
+  }
+  if (Number(used.seconds ?? 0) + (d ?? 0) > MAX_RAW_SECONDS + 1) {
+    return {
+      ok: false,
+      error: `A video can use up to ${formatMinutes(MAX_RAW_SECONDS)} of footage in total.`,
+    };
+  }
+  if (Number(used.bytes ?? 0) + meta.sizeBytes > MAX_PROJECT_BYTES) {
+    return { ok: false, error: "That's more footage than one video can hold. Trim your clips." };
   }
 
   const clipId = crypto.randomUUID();

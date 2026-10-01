@@ -14,6 +14,13 @@ export function formatDuration(seconds: number | null) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
+// For limits in copy: 300 -> "5 minutes", 90 -> "90 seconds".
+export function formatMinutes(seconds: number) {
+  if (seconds % 60 !== 0) return `${seconds} seconds`;
+  const m = seconds / 60;
+  return `${m} ${m === 1 ? "minute" : "minutes"}`;
+}
+
 // Skips Saturdays and Sundays, so a Friday submission is due Tuesday.
 export function addBusinessDays(date: Date, days: number) {
   const d = new Date(date);

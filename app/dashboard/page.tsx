@@ -7,7 +7,14 @@ import { listProjects, type ProjectSummary } from "@/lib/projects";
 import { requireUser } from "@/lib/session";
 import { fulfillCheckout } from "@/lib/stripe";
 import { addBusinessDays, formatDate } from "@/lib/format";
-import { formatUSD, MAX_CLIP_SECONDS, PRICE_PER_VIDEO, TURNAROUND_DAYS } from "@/lib/pricing";
+import { formatMinutes } from "@/lib/format";
+import {
+  formatUSD,
+  MAX_RAW_SECONDS,
+  MAX_VIDEO_SECONDS,
+  PRICE_PER_VIDEO,
+  TURNAROUND_DAYS,
+} from "@/lib/pricing";
 
 export const metadata: Metadata = { title: "Dashboard | Loopgrain" };
 
@@ -117,7 +124,7 @@ const STEPS = [
   },
   {
     title: "Upload your clips",
-    body: `Add as many raw clips as you need, each under ${MAX_CLIP_SECONDS} seconds, straight from your phone.`,
+    body: `Add up to ${formatMinutes(MAX_RAW_SECONDS)} of raw footage straight from your phone. We cut it into a video under ${MAX_VIDEO_SECONDS} seconds.`,
   },
   {
     title: "Get your edit",

@@ -46,3 +46,7 @@ next-env.d.ts
 /video/**/renders/
 /video/**/snapshots/
 /video/**/.hyperframes/
+
+# Customer edit jobs (raw footage) and the faster-whisper venv
+/video/jobs/*/
+/video/.venv/

@@ -76,6 +76,8 @@ export default async function ProjectPage(props: PageProps<"/dashboard/projects/
                 <ClipUploader
                   projectId={project.id}
                   uploadedIds={uploaded.map((c) => c.id)}
+                  usedSeconds={uploaded.reduce((t, c) => t + (c.durationSeconds ?? 0), 0)}
+                  usedBytes={uploaded.reduce((t, c) => t + c.sizeBytes, 0)}
                   credits={credits}
                 />
               </div>

@@ -4,16 +4,19 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition, type DragEvent } from "react";
 import {
   completeClipUpload,
+  removeClip,
   sendWithCredit,
   startCheckout,
   startClipUpload,
 } from "@/app/dashboard/actions";
-import { formatBytes, formatDuration } from "@/lib/format";
+import { formatBytes, formatDuration, formatMinutes } from "@/lib/format";
 import {
   formatUSD,
   MAX_CLIP_BYTES,
   MAX_CLIP_SECONDS,
   MAX_CLIPS_PER_PROJECT,
+  MAX_PROJECT_BYTES,
+  MAX_RAW_SECONDS,
   PRICE_PER_VIDEO,
 } from "@/lib/pricing";
 
@@ -93,10 +96,15 @@ function put(
 export function ClipUploader({
   projectId,
   uploadedIds,
+  usedSeconds,
+  usedBytes,
   credits,
 }: {
   projectId: string;
   uploadedIds: string[];
+  // Totals for the clips already uploaded (unreadable lengths count as 0).
+  usedSeconds: number;
+  usedBytes: number;
   // Prepaid videos on the account; when > 0, sending uses one instead of checking out.
   credits: number;
 }) {
@@ -108,6 +116,8 @@ export function ClipUploader({
 
   const files = useRef(new Map<string, File>());
   const durations = useRef(new Map<string, number | null>());
+  // Footage accepted in this session but not yet uploaded, checked against the totals.
+  const pending = useRef(new Map<string, { seconds: number; bytes: number }>());
   const xhrs = useRef(new Map<string, XMLHttpRequest>());
   const queue = useRef<string[]>([]);
   const active = useRef(0);
@@ -117,6 +127,9 @@ export function ClipUploader({
     (i) => !(i.status === "done" && i.clipId && uploadedIds.includes(i.clipId)),
   );
   const busy = items.some((i) => ["checking", "queued", "uploading", "saving"].includes(i.status));
+  const inFlight = items.filter((i) => ["queued", "uploading", "saving"].includes(i.status));
+  const footage = usedSeconds + inFlight.reduce((t, i) => t + (i.duration ?? 0), 0);
+  const clipCount = uploadedIds.length + inFlight.length;
 
   useEffect(() => {
     if (!busy) return;
@@ -132,6 +145,7 @@ export function ClipUploader({
     const file = files.current.get(key);
     if (!file) return;
     const contentType = contentTypeOf(file)!;
+    let clipId: string | undefined;
     try {
       update(key, { status: "uploading", progress: 0 });
       const start = await startClipUpload(projectId, {
@@ -141,8 +155,9 @@ export function ClipUploader({
         durationSeconds: durations.current.get(key) ?? null,
       });
       if (!start.ok) throw new Error(start.error);
-      if (!files.current.has(key)) return; // cancelled while we were asking for a URL
-      update(key, { clipId: start.clipId });
+      clipId = start.clipId;
+      if (!files.current.has(key)) throw new Error("Cancelled");
+      update(key, { clipId });
 
       await put(start.uploadUrl, file, contentType, xhrs.current, key, (progress) =>
         update(key, { progress }),
@@ -153,9 +168,12 @@ export function ClipUploader({
       if (!done.ok) throw new Error("We couldn't confirm the upload. Retry to send it again.");
 
       files.current.delete(key);
+      pending.current.delete(key);
       update(key, { status: "done" });
       router.refresh();
     } catch (err) {
+      // Drop the half-made clip so it doesn't count against the project's limits.
+      if (clipId) removeClip(clipId).catch(() => {});
       if (!files.current.has(key)) return; // removed by the user mid-upload
       update(key, {
         status: "error",
@@ -190,7 +208,7 @@ export function ClipUploader({
         return {
           ...base,
           status: "error",
-          error: `A project can hold up to ${MAX_CLIPS_PER_PROJECT} clips.`,
+          error: `A video can use up to ${MAX_CLIPS_PER_PROJECT} clips.`,
         };
       }
       if (!contentTypeOf(file))
@@ -208,15 +226,30 @@ export function ClipUploader({
         .filter((i) => i.status === "checking")
         .map(async (item) => {
           const duration = await readDuration(files.current.get(item.key)!);
-          if (duration !== null && duration > MAX_CLIP_SECONDS + 0.5) {
+          const reject = (error: string) => {
             files.current.delete(item.key);
-            update(item.key, {
-              duration,
-              status: "error",
-              error: `This clip is ${formatDuration(duration)}. Trim it to ${MAX_CLIP_SECONDS} seconds or less.`,
-            });
-            return;
+            update(item.key, { duration, status: "error", error });
+          };
+          if (duration !== null && duration > MAX_CLIP_SECONDS + 0.5) {
+            return reject(
+              `This clip is ${formatDuration(duration)}. Trim it to ${formatMinutes(MAX_CLIP_SECONDS)} or less.`,
+            );
           }
+          let seconds = usedSeconds + (duration ?? 0);
+          let bytes = usedBytes + item.size;
+          for (const p of pending.current.values()) {
+            seconds += p.seconds;
+            bytes += p.bytes;
+          }
+          if (seconds > MAX_RAW_SECONDS + 1) {
+            return reject(
+              `This would go over ${formatMinutes(MAX_RAW_SECONDS)} of footage. Trim or remove a clip.`,
+            );
+          }
+          if (bytes > MAX_PROJECT_BYTES) {
+            return reject("That's more footage than one video can hold. Trim your clips.");
+          }
+          pending.current.set(item.key, { seconds: duration ?? 0, bytes: item.size });
           durations.current.set(item.key, duration);
           update(item.key, { duration, status: "queued" });
           queue.current.push(item.key);
@@ -227,6 +260,7 @@ export function ClipUploader({
 
   function remove(key: string) {
     files.current.delete(key);
+    pending.current.delete(key);
     queue.current = queue.current.filter((k) => k !== key);
     xhrs.current.get(key)?.abort();
     setItems((prev) => prev.filter((i) => i.key !== key));
@@ -289,8 +323,9 @@ export function ClipUploader({
           <span className="text-cobalt underline underline-offset-2">choose files</span>
         </span>
         <span className="mt-1 text-sm text-slate">
-          Select several at once. Each clip {MAX_CLIP_SECONDS} seconds or shorter, up to{" "}
-          {MAX_CLIPS_PER_PROJECT} per video.
+          Select several at once. Up to {formatMinutes(MAX_RAW_SECONDS)} of footage and{" "}
+          {MAX_CLIPS_PER_PROJECT} clips per video, each {formatMinutes(MAX_CLIP_SECONDS)} or
+          shorter.
         </span>
         <input
           type="file"
@@ -303,6 +338,13 @@ export function ClipUploader({
           }}
         />
       </label>
+
+      {clipCount > 0 && (
+        <p className="mt-3 text-sm text-slate">
+          {formatDuration(footage)} of {formatDuration(MAX_RAW_SECONDS)} footage used ·{" "}
+          {clipCount} of {MAX_CLIPS_PER_PROJECT} clips
+        </p>
+      )}
 
       {visible.length > 0 && (
         <ul className="mt-4 space-y-2" aria-live="polite">
