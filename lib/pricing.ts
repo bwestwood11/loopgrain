@@ -11,6 +11,8 @@ export const MAX_PROJECT_BYTES = 6 * 1024 ** 3;
 export const MAX_CLIPS_PER_PROJECT = 15;
 export const MAX_VIDEOS_PER_ORDER = 50;
 export const TURNAROUND_DAYS = 2; // business days (Mon-Fri)
+export const MAX_REVISIONS = 3; // revision requests per video
+export const REVISION_TURNAROUND_DAYS = 2; // business days
 
 export function formatUSD(amount: number) {
   return new Intl.NumberFormat("en-US", {

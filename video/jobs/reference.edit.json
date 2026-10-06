@@ -29,6 +29,7 @@
   },
   "motion": "drift",
   "transition": "cut",
+  "style": "planner",
   "segments": [
     {
       "clip": "clip01",

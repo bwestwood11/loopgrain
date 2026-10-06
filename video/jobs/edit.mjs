@@ -19,17 +19,24 @@
 //                   "ink": "#111111", "paper": "#ffffff" },   // end card text and background
 //     "hook":     "Waiting too long between cuts?",          // big text over the opening, or null
 //     "hookSeconds": 2.5,
-//     "captions": true,                                       // word-by-word, from the transcript
+//     "captions": true,                                       // word-by-word, from the transcript; or
+//                                                             // { "mode": "keywords", ... } for talking heads (keywords.mjs)
+//     "sfx":      { "volume": 0.7,   // whooshes on whip/zoom/slash/flare cuts and keyword hits; on by default
+//                   "events": [{ "name": "hit", "at": 12.4 }] },  // with keyword captions, false to turn off;
+//                                    // events: extra sounds at cut-timeline seconds (whoosh, swish, hit, cash)
 //     "grade":    "skin-soft",       // HyperFrames grading preset, a full payload
 //                                    // ({ preset, intensity, adjust, details }), or null for none
 //     "motion":   "push",            // camera move on every shot: push (punch in, then drift),
-//                                    // drift (slow push only) or none
-//     "transition": "cut",           // how each shot enters: cut, flash, whip, zoom, slash or iris
+//                                    // drift (slow push only), pull (eases back out from a punch-in) or none
+//     "transition": "cut",           // how each shot enters: cut, flash, whip, zoom, slash, iris or flare
+//                                    // (flare: a warm lens flare sweeps across and washes out the cut)
+//     "style":    "planner",         // look of every graphic: planner, editorial, hud or broadcast (styles.mjs)
 //     "segments": [                                           // played in order
 //       { "clip": "clip01", "in": 0.0, "out": 2.7, "transition": "slash" },   // on the first shot: an intro
 //       { "clip": "clip01", "in": 3.3, "out": 5.9, "zoom": 1.12,          // punch-in hides a jump cut
 //         "broll": { "clip": "clip04", "in": 1.0, "offset": 0.4, "duration": 1.5 } },  // muted cutaway
-//       { "clip": "clip02", "in": 0.0, "out": 3.4, "transition": "whip", "motion": "drift", "grade": "warm-daylight" }
+//       { "clip": "clip02", "in": 0.0, "out": 3.4, "transition": "whip", "motion": "drift", "grade": "warm-daylight" },
+//       { "clip": "clip03", "in": 2.0, "out": 4.0, "captions": false }   // no captions here (music, background talk)
 //     ],
 //     "cta":      { "headline": "Book online in 30 seconds", "button": "Book now", "sub": "Link in bio", "seconds": 2.5,
 //                   "tag": "Free consult",   // optional pill above the headline
@@ -53,6 +60,8 @@ import { fileURLToPath } from "node:url";
 import { resolveJob } from "./job.mjs";
 import { FMT_SOURCE, FONT_FACES, OVERLAY_CSS, buildOverlays } from "./overlays.mjs";
 import { EXTRA_TEMPLATE, editRuntime, readExtra } from "./extra.mjs";
+import { STYLES } from "./styles.mjs";
+import { KEYWORD_FONT, buildKeywords } from "./keywords.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const shared = join(here, "..", "shared");
@@ -81,8 +90,8 @@ const round = (n) => Math.round(n * 1000) / 1000;
 
 // HyperFrames 0.8.92 grading presets (`npx hyperframes media-treatment --capability presets`).
 const GRADE_PRESETS = ["neutral", "warm-daylight", "clean-studio", "skin-soft", "food-pop", "night-lift", "muted-editorial", "vintage-wash", "mono-clean", "mono-fade", "soft-boost", "bright-pop", "deep-contrast", "creator-camcorder", "vhs-playback", "home-movie-8mm", "editorial-halftone", "two-ink-print"];
-const MOTIONS = ["push", "drift", "none"];
-const TRANSITIONS = ["cut", "flash", "whip", "zoom", "slash", "iris"];
+const MOTIONS = ["push", "drift", "pull", "none"];
+const TRANSITIONS = ["cut", "flash", "whip", "zoom", "slash", "iris", "flare"];
 // Tapping hand for cta.tap (Material Design "touch_app" icon, Apache 2.0).
 const HAND_SVG = `<svg class="hand" viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" stroke="#111" stroke-width="0.9" stroke-linejoin="round" d="M9 11.24V7.5C9 6.12 10.12 5 11.5 5S14 6.12 14 7.5v3.74c1.21-.81 2-2.18 2-3.74C16 5.01 13.99 3 11.5 3S7 5.01 7 7.5c0 1.56.79 2.93 2 3.74zm9.84 4.63l-4.54-2.26c-.17-.07-.35-.11-.54-.11H13v-6c0-.83-.67-1.5-1.5-1.5S10 6.67 10 7.5v10.74l-3.43-.72c-.08-.01-.15-.03-.24-.03-.31 0-.59.13-.79.33l-.79.8 4.94 4.94c.27.27.65.44 1.06.44h6.79c.75 0 1.33-.55 1.44-1.28l.75-5.27c.01-.07.02-.14.02-.2 0-.62-.38-1.16-.91-1.39z"/></svg>`;
 // Same look as the hero spots: a soft skin preset at partial strength, a touch of contrast and a light vignette.
@@ -137,6 +146,7 @@ if (!existsSync(editPath)) {
     grade: DEFAULT_GRADE,
     motion: "push",
     transition: "cut",
+    style: "planner", // planner, editorial, hud or broadcast: pick per job (STYLE.md)
     segments,
     cta,
     music: null,
@@ -151,6 +161,9 @@ if (!existsSync(editPath)) {
 
 const edit = JSON.parse(readFileSync(editPath, "utf8"));
 const brand = { name: "", accent: "#ffd23f", ink: "#111111", paper: "#ffffff", ...edit.brand };
+const styleName = edit.style ?? "planner";
+const style = STYLES[styleName];
+if (!style) throw new Error(`Unknown style "${styleName}". Use one of: ${Object.keys(STYLES).join(", ")}.`);
 brand.accentText ??= brand.ink;
 brand.highlight ??= brand.accent;
 const problems = [];
@@ -208,9 +221,12 @@ if (edit.cta?.headline === "Your headline here") problems.push("cta.headline is 
 // Captions: transcript words that fall inside each segment, mapped onto the cut's timeline,
 // then grouped into short lines that break on punctuation, pauses and length.
 const groups = [];
+const words = [];
+const keywordMode = edit.captions?.mode === "keywords";
+if (edit.captions && !keywordMode && edit.captions !== true) throw new Error(`Unknown captions mode "${edit.captions.mode}". Use true, false or { "mode": "keywords" }.`);
 if (edit.captions !== false) {
-  const words = [];
   for (const seg of timeline) {
+    if (seg.captions === false) continue;
     for (const s of transcript(seg.clip).segments) {
       for (const w of s.words) {
         const mid = (w.start + w.end) / 2;
@@ -224,6 +240,8 @@ if (edit.captions !== false) {
       }
     }
   }
+}
+if (edit.captions !== false && !keywordMode) {
   let g = null;
   for (const w of words) {
     const prev = g?.words.at(-1);
@@ -315,15 +333,72 @@ const overlays = buildOverlays(edit.overlays, {
     return readFileSync(file, "utf8");
   },
   brand,
+  em: style.em,
 });
 problems.push(...overlays.problems);
+for (const f of style.fonts) overlays.fonts.add(f);
 for (const f of overlays.fonts) copyIfNewer(join(shared, "fonts", f), join(assets, "fonts", f));
+
+const keywords = keywordMode ? buildKeywords(words, edit.captions, { esc, round, cutEnd, timeline, accent: brand.accent }) : null;
+if (keywords) {
+  problems.push(...keywords.problems);
+  overlays.fonts.add(KEYWORD_FONT);
+  copyIfNewer(join(shared, "fonts", KEYWORD_FONT), join(assets, "fonts", KEYWORD_FONT));
+}
+
+// Sound effects: a whoosh under whip/zoom/slash cuts, a swish under flashes, plus the keyword hits.
+// Files are in video/shared/sfx/. Each sound peaks a beat after it starts, so it's started "lead"
+// seconds early to land on its moment; "len" trims the tail, "gain" evens out the files' levels.
+// A sound with several files takes turns, so back-to-back whooshes don't sound identical.
+const SFX = {
+  whoosh: [
+    { file: "swoosh 2.mp3", lead: 0.47, len: 0.85, gain: 0.4 },
+    { file: "swoosh 3.mp3", lead: 0.29, len: 0.65, gain: 0.5 },
+  ],
+  swish: [{ file: "swoosh.mp3", lead: 0.09, len: 0.3, gain: 0.35 }],
+  hit: [{ file: "ding.mp3", lead: 0.16, len: 1.1, gain: 0.6 }],
+  cash: [{ file: "cash register.mp3", lead: 0.55, len: 1.45, gain: 1 }],
+};
+const sfxSrc = (file) => file.toLowerCase().replace(/\s+/g, "-");
+const sfxOn = edit.sfx === undefined ? keywordMode : edit.sfx !== false;
+const sfxVolume = edit.sfx?.volume ?? 0.7;
+const sfxEvents = [];
+if (sfxOn) {
+  for (const s of timeline.slice(1)) {
+    if (["whip", "zoom", "slash", "iris", "flare"].includes(s.transition)) sfxEvents.push({ name: "whoosh", at: s.start });
+    else if (s.transition === "flash") sfxEvents.push({ name: "swish", at: s.start });
+  }
+  sfxEvents.push(...(keywords?.sfx ?? []), ...(edit.sfx?.events ?? []));
+}
+const trackEnds = [];
+const sfxTurns = {};
+const sfxTags = sfxEvents
+  .sort((a, b) => a.at - b.at)
+  .map((e) => {
+    if (!SFX[e.name]) throw new Error(`Unknown sound effect "${e.name}". Use one of: ${Object.keys(SFX).join(", ")}.`);
+    const turn = (sfxTurns[e.name] = (sfxTurns[e.name] ?? -1) + 1);
+    const fx = SFX[e.name][turn % SFX[e.name].length];
+    return { ...e, fx, start: round(Math.max(0, e.at - fx.lead)) };
+  })
+  .sort((a, b) => a.start - b.start)
+  .map((e, k) => {
+    const len = Math.min(e.fx.len, total - e.start);
+    // Overlapping sounds go on separate tracks, from track 3 up (0 is the cut, 1 B-roll, 2 music).
+    let track = trackEnds.findIndex((end) => end <= e.start);
+    if (track === -1) track = trackEnds.push(0) - 1;
+    trackEnds[track] = e.start + len;
+    return `<audio id="fx${k}" src="assets/sfx/${sfxSrc(e.fx.file)}" data-start="${e.start}" data-duration="${round(len)}" data-volume="${round(Math.min(1, sfxVolume * e.fx.gain))}" data-track-index="${3 + track}"></audio>`;
+  });
+if (sfxTags.length) {
+  mkdirSync(join(assets, "sfx"), { recursive: true });
+  for (const name of new Set(sfxEvents.map((e) => e.name))) for (const { file } of SFX[name]) copyIfNewer(join(shared, "sfx", file), join(assets, "sfx", sfxSrc(file)));
+}
 
 const extra = existsSync(extraPath) ? readExtra(extraPath) : null;
 if (extra) {
   if (existsSync(join(dir, "extra"))) cpSync(join(dir, "extra"), join(assets, "extra"), { recursive: true });
   const generated = new Set(
-    [...cams, ...brolls, ...caps, ...overlays.html, `<i id="root"><i id="hook"><i id="end"><i id="flash"><i id="s1"><i id="s2"><i id="s3"><i id="iris"><i id="music">`]
+    [...cams, ...brolls, ...caps, ...(keywords?.html ?? []), ...sfxTags, ...overlays.html, `<i id="root"><i id="hook"><i id="end"><i id="flash"><i id="s1"><i id="s2"><i id="s3"><i id="iris"><i id="flare"><i id="music">`]
       .flatMap((h) => [...h.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1])),
   );
   const clashes = extra.ids.filter((id) => generated.has(id));
@@ -334,6 +409,7 @@ const tl = [];
 const tw = (target, from, to, at) =>
   tl.push(`tl.fromTo(${JSON.stringify(target)}, ${JSON.stringify(from)}, ${JSON.stringify({ ...to, immediateRender: false })}, ${round(Math.max(0, at))});`);
 const sc = (n) => round(n);
+let flareCount = 0;
 for (const s of timeline) {
   const c = s.start;
   const z = s.zoom ?? 1;
@@ -346,6 +422,8 @@ for (const s of timeline) {
     tw(mv, { scale: sc(z * 1.16) }, { keyframes }, c);
   } else if (s.motion === "drift") {
     tw(mv, { scale: sc(z) }, { scale: sc(z * 1.07), duration: s.duration, ease: "none" }, c);
+  } else if (s.motion === "pull") {
+    tw(mv, { scale: sc(z * 1.14) }, { scale: sc(z), duration: s.duration, ease: "power2.out" }, c);
   }
   if (s.brollAt && s.motion !== "none") {
     tw(`#bm${s.i}`, { scale: 1.04 }, { scale: 1.12, duration: s.brollAt.duration, ease: "none" }, s.brollAt.start);
@@ -375,6 +453,20 @@ for (const s of timeline) {
       const lead = prev ? 0.16 : 0;
       // Skewed 20deg over 2520px tall, a bar's corners reach ~460px past its box, so park them well off-frame.
       ["#s1", "#s2", "#s3"].forEach((bar, k) => tw(bar, { x: -1500 }, { x: 2000, duration: 0.4, ease: "power2.inOut" }, c - lead + k * 0.04));
+      break;
+    }
+    case "flare": {
+      // A warm lens flare crosses the frame and peaks on the cut, washing out the hard edit.
+      // Alternate cuts sweep the other way. One keyframed tween per layer, like flash.
+      const d = flareCount++ % 2 ? -1 : 1;
+      const lead = prev ? 0.28 : 0;
+      const fade = prev
+        ? { keyframes: [{ opacity: 1, duration: 0.28, ease: "power2.in" }, { opacity: 0, duration: 0.5, ease: "power2.out" }] }
+        : { opacity: 0, duration: 0.5, ease: "power2.out" };
+      tw("#flare", { opacity: prev ? 0 : 1 }, fade, c - lead);
+      tw("#flare .fw", { opacity: prev ? 0 : 0.85 }, prev ? { keyframes: [{ opacity: 0.85, duration: 0.28, ease: "power2.in" }, { opacity: 0, duration: 0.42, ease: "power2.out" }] } : { opacity: 0, duration: 0.42, ease: "power2.out" }, c - lead);
+      tw("#flare .fc", { x: prev ? -560 * d : 0, y: prev ? 180 : 0, rotation: -8 * d }, { x: 560 * d, y: -180, rotation: -8 * d, duration: lead + 0.5, ease: "sine.inOut" }, c - lead);
+      tw("#flare .fg", { x: prev ? 320 * d : 0, y: prev ? -110 : 0 }, { x: -320 * d, y: 110, duration: lead + 0.5, ease: "sine.inOut" }, c - lead);
       break;
     }
     case "iris":
@@ -454,12 +546,25 @@ ${[...overlays.fonts].map((f) => `      ${FONT_FACES[f]}\n`).join("")}      * { 
       #s3 { background: var(--highlight); }
       #iris { position: absolute; left: 540px; top: 960px; width: 2400px; height: 2400px; margin: -1200px 0 0 -1200px;
         border-radius: 50%; background: var(--accent); }
-${overlays.html.length ? `\n      /* Overlays: above the transitions, below captions and the hook. */${OVERLAY_CSS}\n` : ""}${extra?.css ? `\n      /* ---- extra.html ---- */\n${ind(6, extra.css.split("\n").map((l) => l.trimEnd()))}\n` : ""}
+      /* Flare: screen-blended light, so it brightens the footage rather than covering it. */
+      #flare { position: absolute; inset: 0; overflow: hidden; opacity: 0; mix-blend-mode: screen; }
+      #flare i { position: absolute; display: block; }
+      #flare .fw { inset: 0; opacity: 0; background: radial-gradient(ellipse at 50% 42%, rgba(255, 244, 230, 1), rgba(255, 200, 150, 0.7) 45%, rgba(255, 150, 90, 0.25) 80%); }
+      #flare .fc { left: 0; top: 0; width: 1080px; height: 1920px; }
+      #flare .fo { left: 540px; top: 820px; width: 1200px; height: 1200px; margin: -600px 0 0 -600px; border-radius: 50%;
+        background: radial-gradient(circle, #fff 0, rgba(255, 236, 205, 0.9) 9%, rgba(255, 186, 120, 0.4) 30%, rgba(255, 140, 80, 0) 68%); }
+      #flare .fs { left: -1300px; top: 802px; width: 3680px; height: 36px; filter: blur(5px);
+        background: linear-gradient(90deg, rgba(255, 200, 150, 0), rgba(255, 214, 170, 0.5) 38%, #fff 50%, rgba(255, 214, 170, 0.5) 62%, rgba(255, 200, 150, 0)); }
+      #flare .fg { inset: 0;
+        background: radial-gradient(circle at 30% 64%, rgba(170, 205, 255, 0.35) 0 46px, rgba(170, 205, 255, 0) 50px),
+          radial-gradient(circle at 70% 30%, rgba(255, 196, 150, 0.3) 0 90px, rgba(255, 196, 150, 0) 96px),
+          radial-gradient(circle at 80% 22%, rgba(255, 230, 200, 0.4) 0 18px, rgba(255, 230, 200, 0) 22px); }
+${overlays.html.length ? `\n      /* Overlays: above the transitions, below captions and the hook. */${OVERLAY_CSS}\n` : ""}${style.css ? `\n      /* ---- style: ${styleName} (after overlays so it wins; extra.html can still override) ---- */${style.css}\n` : ""}${extra?.css ?`\n      /* ---- extra.html ---- */\n${ind(6, extra.css.split("\n").map((l) => l.trimEnd()))}\n` : ""}
       /* Captions sit above the bottom ~420px that TikTok/Reels cover with their own UI. */
       .cap { position: absolute; left: 60px; right: 60px; top: 1180px; text-align: center; opacity: 0;
         font-family: "Anton", sans-serif; font-size: 112px; line-height: 1.05; text-transform: uppercase; color: #fff;
         -webkit-text-stroke: 10px #000; paint-order: stroke fill; text-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); }
-      .cap span { display: inline-block; }
+      .cap span { display: inline-block; }${keywords ? keywords.css : ""}
 
       #hook { position: absolute; left: 70px; right: 70px; top: 260px; padding: 34px 40px; opacity: 0;
         background: var(--accent); color: var(--accent-text); border-radius: 22px; text-align: center;
@@ -481,11 +586,11 @@ ${overlays.html.length ? `\n      /* Overlays: above the transitions, below capt
     </style>
   </head>
   <body>
-    <div id="root" data-composition-id="main" data-start="0" data-duration="${total}" data-width="${W}" data-height="${H}">
+    <div id="root" class="st-${styleName}" data-composition-id="main" data-start="0" data-duration="${total}" data-width="${W}" data-height="${H}">
 ${ind(6, cams)}
-${brolls.length ? ind(6, brolls) + "\n" : ""}${musicSrc ? `      <audio id="music" src="${musicSrc}" data-start="0" data-duration="${total}" data-volume="${edit.music.volume ?? 0.12}" data-fade-out="1.5" data-track-index="2"></audio>\n` : ""}${transitionsUsed.has("flash") ? `      <div id="flash"></div>\n` : ""}${transitionsUsed.has("slash") ? `      <i id="s1" class="slash"></i><i id="s2" class="slash"></i><i id="s3" class="slash"></i>\n` : ""}${transitionsUsed.has("iris") ? `      <div id="iris"></div>\n` : ""}${overlays.html.length ? ind(6, overlays.html) + "\n" : ""}${extra?.html ? `      <!-- extra.html -->\n${ind(6, extra.html.split("\n").map((l) => l.trimEnd()))}\n` : ""}
+${brolls.length ? ind(6, brolls) + "\n" : ""}${musicSrc ? `      <audio id="music" src="${musicSrc}" data-start="0" data-duration="${total}" data-volume="${edit.music.volume ?? 0.12}" data-fade-out="1.5" data-track-index="2"></audio>\n` : ""}${transitionsUsed.has("flash") ? `      <div id="flash"></div>\n` : ""}${transitionsUsed.has("slash") ? `      <i id="s1" class="slash"></i><i id="s2" class="slash"></i><i id="s3" class="slash"></i>\n` : ""}${transitionsUsed.has("iris") ? `      <div id="iris"></div>\n` : ""}${transitionsUsed.has("flare") ? `      <div id="flare" data-layout-allow-overflow><i class="fw"></i><i class="fg" data-layout-allow-overflow></i><i class="fc" data-layout-allow-overflow><i class="fo" data-layout-allow-overflow></i><i class="fs" data-layout-allow-overflow></i></i></div>\n` : ""}${overlays.html.length ? ind(6, overlays.html) + "\n" : ""}${extra?.html ? `      <!-- extra.html -->\n${ind(6, extra.html.split("\n").map((l) => l.trimEnd()))}\n` : ""}
 ${ind(6, caps)}
-${edit.hook ? `      <div id="hook">${esc(edit.hook)}</div>\n` : ""}${edit.cta ? `      <div id="end">
+${keywords ? ind(6, keywords.html) + "\n" : ""}${sfxTags.length ? ind(6, sfxTags) + "\n" : ""}${edit.hook ? `      <div id="hook">${esc(edit.hook)}</div>\n` : ""}${edit.cta ? `      <div id="end">
         <div class="name">${esc(brand.name)}</div>
         ${edit.cta.tag ? `<div class="tag">${esc(edit.cta.tag)}</div>` : ""}
         <div class="headline">${esc(edit.cta.headline)}</div>
@@ -502,7 +607,7 @@ ${overlays.usesFmt || extra ? `        ${FMT_SOURCE}\n` : ""}        // Initial 
         ${transitionsUsed.has("slash") ? 'gsap.set(".slash", { x: -1500, skewX: -20 });' : ""}
         ${transitionsUsed.has("iris") ? 'gsap.set("#iris", { scale: 0 });' : ""}
 ${overlays.init.length ? ind(8, overlays.init) + "\n" : ""}${ind(8, tl)}
-${overlays.tl.length ? ind(8, overlays.tl) + "\n" : ""}${extra?.js ? `        // ---- extra.html ----\n        {\n        ${editRuntime({ cutEnd, total, timeline, groups, round })}\n${ind(10, extra.js.split("\n").map((l) => l.trimEnd()))}\n        }\n` : ""}        tl.set({}, {}, ${total});
+${keywords ? ind(8, keywords.tl) + "\n" : ""}${overlays.tl.length ? ind(8, overlays.tl) + "\n" : ""}${extra?.js ? `        // ---- extra.html ----\n        {\n        ${editRuntime({ cutEnd, total, timeline, groups: keywords ? [{ words }] : groups, round })}\n${ind(10, extra.js.split("\n").map((l) => l.trimEnd()))}\n        }\n` : ""}        tl.set({}, {}, ${total});
         tl.seek(0);
         window.__timelines["main"] = tl;
       })();
@@ -516,7 +621,8 @@ writeFileSync(stampPath, hash(html) + "\n");
 writeFileSync(join(out, "hyperframes.json"), JSON.stringify({ $schema: "https://hyperframes.heygen.com/schema/hyperframes.json", paths: { assets: "assets" } }, null, 2) + "\n");
 writeFileSync(join(out, "meta.json"), JSON.stringify({ id: `loopgrain-${job}`, name: `Loopgrain edit: ${job}` }, null, 2) + "\n");
 
-console.log(`Built ${join("video", "jobs", job, "edit")}: ${timeline.length} segments, ${groups.length} caption lines, ${overlays.html.length} overlays${extra ? " + extra.html" : ""}, ${total.toFixed(1)}s.`);
+const captionSummary = keywords ? `${keywords.count} keywords + ${keywords.smallLines} small lines` : `${groups.length} caption lines`;
+console.log(`Built ${join("video", "jobs", job, "edit")}: ${timeline.length} segments, ${captionSummary}${sfxTags.length ? `, ${sfxTags.length} sound effects` : ""}, ${overlays.html.length} overlays${extra ? " + extra.html" : ""}, ${total.toFixed(1)}s.`);
 for (const p of problems) console.warn(`  ! ${p}`);
 
 const hf = (argv) => execFileSync("npx", ["--yes", HF, ...argv], { cwd: out, stdio: "inherit", shell: process.platform === "win32" });

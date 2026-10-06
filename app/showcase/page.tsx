@@ -119,10 +119,10 @@ export default function ShowcasePage() {
               </p>
             </div>
             <Link
-              href="/sign-up"
+              href="/sign-up?videos=1"
               className="shrink-0 rounded-full bg-caption px-6 py-3.5 font-semibold text-ink hover:bg-paper"
             >
-              Create an account
+              Get your first video edited for {formatUSD(PRICE_PER_VIDEO)}
             </Link>
           </div>
         </section>

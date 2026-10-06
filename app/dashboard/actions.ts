@@ -15,6 +15,7 @@ import {
   MAX_CLIPS_PER_PROJECT,
   MAX_PROJECT_BYTES,
   MAX_RAW_SECONDS,
+  MAX_REVISIONS,
   MAX_VIDEOS_PER_ORDER,
 } from "@/lib/pricing";
 import { applyCredit } from "@/lib/orders";
@@ -241,6 +242,13 @@ export async function requestRevision(
   const p = await ownedProject(uid, projectId);
   if (!p || p.status !== "delivered")
     return { error: "Revisions can only be requested on a delivered video." };
+
+  const [{ used }] = await db
+    .select({ used: count() })
+    .from(revisionRequest)
+    .where(eq(revisionRequest.projectId, projectId));
+  if (used >= MAX_REVISIONS)
+    return { error: `You've used all ${MAX_REVISIONS} revisions for this video.` };
 
   const note = String(formData.get("note") ?? "").trim();
   if (note.length < 10) return { error: "Tell your editor what to change (at least a sentence)." };

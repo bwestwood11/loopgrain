@@ -11,7 +11,7 @@ const PRESETS = [1, 3, 5, 10];
 
 export function VideoCalculator({
   signedIn = false,
-  initialCount = 5,
+  initialCount = 1,
 }: {
   signedIn?: boolean;
   initialCount?: number;
@@ -119,10 +119,10 @@ export function VideoCalculator({
             href={`/sign-up?videos=${count}`}
             className="mt-6 block w-full rounded-full bg-caption px-5 py-3.5 text-center font-semibold text-ink hover:bg-paper"
           >
-            Create an account to order
+            Order {count} {noun} for {formatUSD(PRICE_PER_VIDEO * count)}
           </Link>
           <p className="mt-3 text-center text-xs text-paper/60">
-            No subscription. You only pay for the videos you order.
+            You&apos;ll set up a free account first. No subscription.
           </p>
         </>
       )}

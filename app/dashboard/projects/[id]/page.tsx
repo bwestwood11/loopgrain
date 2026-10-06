@@ -7,7 +7,7 @@ import { StatusPill } from "@/components/project-status";
 import { RevisionForm } from "@/components/revision-form";
 import type { Clip, Deliverable, ProjectStatus } from "@/db/schema";
 import { addBusinessDays, formatBytes, formatDate, formatDuration } from "@/lib/format";
-import { TURNAROUND_DAYS } from "@/lib/pricing";
+import { MAX_REVISIONS, REVISION_TURNAROUND_DAYS, TURNAROUND_DAYS } from "@/lib/pricing";
 import { getProject } from "@/lib/projects";
 import { presignDownload } from "@/lib/r2";
 import { requireUser } from "@/lib/session";
@@ -98,7 +98,7 @@ export default async function ProjectPage(props: PageProps<"/dashboard/projects/
           {project.status === "revision_requested" && openRevision && (
             <Notice
               title="Revision in progress"
-              body={`You asked on ${formatDate(openRevision.createdAt)}: “${openRevision.note}”`}
+              body={`You asked on ${formatDate(openRevision.createdAt)}: “${openRevision.note}” Expect the updated video by ${formatDate(addBusinessDays(openRevision.createdAt, REVISION_TURNAROUND_DAYS))}.`}
             />
           )}
 
@@ -107,6 +107,7 @@ export default async function ProjectPage(props: PageProps<"/dashboard/projects/
               title={project.title}
               deliverables={deliverables}
               canRevise={project.status === "delivered"}
+              revisionsLeft={Math.max(0, MAX_REVISIONS - revisions.length)}
               projectId={project.id}
             />
           )}
@@ -253,11 +254,13 @@ async function Deliveries({
   projectId,
   deliverables,
   canRevise,
+  revisionsLeft,
 }: {
   title: string;
   projectId: string;
   deliverables: Deliverable[];
   canRevise: boolean;
+  revisionsLeft: number;
 }) {
   const slug =
     title
@@ -317,9 +320,21 @@ async function Deliveries({
               className="rounded-2xl bg-paper p-5 shadow-[0_1px_0_var(--color-line)]"
             >
               <h3 className="font-semibold">Need changes?</h3>
-              <div className="mt-3">
-                <RevisionForm projectId={projectId} />
-              </div>
+              {revisionsLeft > 0 ? (
+                <>
+                  <p className="mt-1 text-sm text-slate">
+                    {revisionsLeft} of {MAX_REVISIONS} revisions left. Each one comes back within{" "}
+                    {REVISION_TURNAROUND_DAYS} business days.
+                  </p>
+                  <div className="mt-3">
+                    <RevisionForm projectId={projectId} />
+                  </div>
+                </>
+              ) : (
+                <p className="mt-1 text-sm text-slate">
+                  You&apos;ve used all {MAX_REVISIONS} revisions for this video.
+                </p>
+              )}
             </div>
           )}
         </div>

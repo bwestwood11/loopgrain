@@ -170,6 +170,11 @@ export const OVERLAY_CSS = `
 // @font-face rules for fonts the overlays ask edit.mjs to ship.
 export const FONT_FACES = {
   "fraunces-italic.woff2": `@font-face { font-family: "Fraunces"; src: url("assets/fonts/fraunces-italic.woff2") format("woff2"); font-weight: 300 900; font-style: italic; }`,
+  "fraunces.woff2": `@font-face { font-family: "Fraunces"; src: url("assets/fonts/fraunces.woff2") format("woff2"); font-weight: 300 900; font-style: normal; }`,
+  "space-grotesk.woff2": `@font-face { font-family: "Space Grotesk"; src: url("assets/fonts/space-grotesk.woff2") format("woff2"); font-weight: 300 700; }`,
+  "barlow-cond-800i.woff2": `@font-face { font-family: "Barlow Condensed"; src: url("assets/fonts/barlow-cond-800i.woff2") format("woff2"); font-weight: 800; font-style: italic; }`,
+  "barlow-cond-600i.woff2": `@font-face { font-family: "Barlow Condensed"; src: url("assets/fonts/barlow-cond-600i.woff2") format("woff2"); font-weight: 600; font-style: italic; }`,
+  "unbounded-800.woff2": `@font-face { font-family: "Unbounded"; src: url("assets/fonts/unbounded-800.woff2") format("woff2"); font-weight: 800; }`,
   "jetbrains-mono.woff2": `@font-face { font-family: "JetBrains Mono"; src: url("assets/fonts/jetbrains-mono.woff2") format("woff2"); font-weight: 100 800; }`,
 };
 
@@ -178,7 +183,9 @@ export const FONT_FACES = {
  */
 // still(at) returns { src, grade } for a frame of the cut at that time (freeze needs it);
 // readJobFile(name) returns a file from the job folder as text (intro drawings).
-export function buildOverlays(list, { cutEnd, captions, hook, esc, round, still, readJobFile, brand }) {
+export function buildOverlays(list, { cutEnd, captions, hook, esc, round, still, readJobFile, brand, em = 1 }) {
+  // The style's fonts run wider or narrower than Anton/Inter, which fit() is tuned for.
+  const fitS = (text, maxPx, boxPx, emPerChar) => fit(text, maxPx, boxPx, emPerChar * em);
   // GSAP can only tween real colours, not var() or color-mix(), so tweens use the brand hexes.
   const rgba = (hex, a) => { const h = hex.replace("#", ""); const v = (i) => parseInt(h.length === 3 ? h[i] + h[i] : h.slice(i * 2, i * 2 + 2), 16); return `rgba(${v(0)}, ${v(1)}, ${v(2)}, ${a})`; };
   const html = [];
@@ -227,7 +234,7 @@ export function buildOverlays(list, { cutEnd, captions, hook, esc, round, still,
         const marked = o.highlight !== false;
         dur = o.duration ?? 2.2;
         top = o.y ?? 300;
-        const sizes = lines.map((l, i) => fit(l, i === lines.length - 1 && marked ? 180 : 140, i === lines.length - 1 && marked ? 900 : 950, 0.5));
+        const sizes = lines.map((l, i) => fitS(l, i === lines.length - 1 && marked ? 180 : 140, i === lines.length - 1 && marked ? 900 : 950, 0.5));
         bottom = top + sizes.reduce((s, px) => s + px * 1.1, 0);
         html.push(
           `<div id="${id}" class="ov ov-title" style="top: ${top}px">` +
@@ -249,7 +256,7 @@ export function buildOverlays(list, { cutEnd, captions, hook, esc, round, still,
         need(o, "name", where);
         dur = o.duration ?? 2.6;
         top = o.y ?? 780;
-        const size = fit(o.name, 120, 880, 0.48);
+        const size = fitS(o.name, 120, 880, 0.48);
         bottom = top + 100 + size * 1.12 + (o.tag ? 60 : 0) + (o.meta ? 60 : 0);
         html.push(
           `<div id="${id}" class="ov ov-lower" style="top: ${top}px"><div class="slab">` +
@@ -299,7 +306,7 @@ export function buildOverlays(list, { cutEnd, captions, hook, esc, round, still,
           const sid = `${id}n${k}`;
           const t0 = t + 0.3 + k * 0.24;
           const finalText = fmt(s.to, decimalsOf(s.to), s.prefix, s.suffix);
-          const size = fit(finalText, 116, s.was != null ? 330 : 520, 0.5);
+          const size = fitS(finalText, 116, s.was != null ? 330 : 520, 0.5);
           if (s.was != null) tl.push(`tl.to("#${id}k${k} .old i", { scaleX: 1, duration: 0.2, ease: "power2.out" }, ${at(t0)});`);
           const startText = count(sid, { ...s, from: s.from ?? s.was ?? 0 }, t0 + 0.05, 0.9);
           return (
@@ -322,7 +329,7 @@ export function buildOverlays(list, { cutEnd, captions, hook, esc, round, still,
         dur = o.duration ?? 1.4 + o.items.length * 0.38 + 0.9;
         top = o.y ?? 180;
         bottom = top + 150 + o.items.length * 104 + (o.title ? 40 : 0);
-        const size = Math.min(...o.items.map((it) => fit(it, 54, 700, 0.56)));
+        const size = Math.min(...o.items.map((it) => fitS(it, 54, 700, 0.56)));
         html.push(
           `<div id="${id}" class="ov ov-check" style="top: ${top}px">` +
             (o.title ? `<div class="head">${esc(o.title)}</div>` : "") +
@@ -380,7 +387,7 @@ export function buildOverlays(list, { cutEnd, captions, hook, esc, round, still,
         dur = o.duration ?? 2;
         top = o.y ?? 120;
         bottom = top + 150 + (o.small ? 40 : 0);
-        html.push(`<div id="${id}" class="ov ov-stamp anton" style="top: ${top}px; font-size: ${fit(o.text, 104, 880, 0.5)}px">${o.small ? `<small>${esc(o.small)}</small>` : ""}${esc(o.text)}</div>`);
+        html.push(`<div id="${id}" class="ov ov-stamp anton" style="top: ${top}px; font-size: ${fitS(o.text, 104, 880, 0.5)}px">${o.small ? `<small>${esc(o.small)}</small>` : ""}${esc(o.text)}</div>`);
         from(`#${id}`, { opacity: 0, scale: 1.8, rotation: -14 }, { opacity: 1, scale: 1, rotation: -4, duration: 0.35, ease: "back.out(2.2)" }, t);
         from(`#${id}`, { opacity: 1, y: 0 }, { opacity: 0, y: -40, duration: 0.2 }, t + dur - 0.2);
         break;
@@ -468,7 +475,7 @@ export function buildOverlays(list, { cutEnd, captions, hook, esc, round, still,
         }
         html.push(
           `<div id="${id}" class="ov ov-intro" style="opacity: 1">` +
-            `<div class="head" id="${id}h" style="top: ${o.y ?? 300}px"><small data-layout-allow-overlap>${esc(o.kicker ?? "")}</small><b data-layout-allow-overlap style="font-size: ${fit(o.word, 150, 840, 0.5)}px">${esc(o.word)}</b></div>` +
+            `<div class="head" id="${id}h" style="top: ${o.y ?? 300}px"><small data-layout-allow-overlap>${esc(o.kicker ?? "")}</small><b data-layout-allow-overlap style="font-size: ${fitS(o.word, 150, 840, 0.5)}px">${esc(o.word)}</b></div>` +
             (drawing ? `<svg viewBox="0 0 1080 1920" width="1080" height="1920" aria-hidden="true">${drawing}</svg>` : "") +
             `</div><i id="${id}e" class="ov-edge"></i>`,
         );

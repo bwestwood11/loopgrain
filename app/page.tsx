@@ -10,7 +10,9 @@ import {
   MAX_CLIPS_PER_PROJECT,
   MAX_RAW_SECONDS,
   MAX_VIDEO_SECONDS,
+  MAX_REVISIONS,
   PRICE_PER_VIDEO,
+  REVISION_TURNAROUND_DAYS,
   TURNAROUND_DAYS,
 } from "@/lib/pricing";
 
@@ -63,6 +65,10 @@ const FAQS = [
     a: "A vertical 1080×1920 MP4 for each clip, ready to upload to Instagram, TikTok, YouTube Shorts, and Facebook.",
   },
   {
+    q: "What if I want something changed?",
+    a: `Every video includes ${MAX_REVISIONS} revision requests. Once it's delivered, ask for changes from your dashboard, with timestamps if you can, and the updated video comes back within ${REVISION_TURNAROUND_DAYS} business days.`,
+  },
+  {
     q: "Who owns the finished videos?",
     a: "You do. Post them anywhere, run them as ads, and keep them forever.",
   },
@@ -89,10 +95,10 @@ export default function Home() {
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
-                href="/sign-up"
+                href="/sign-up?videos=1"
                 className="rounded-full bg-cobalt px-6 py-3.5 font-semibold text-white hover:bg-cobalt-deep"
               >
-                Create an account
+                Get your first video edited for {formatUSD(PRICE_PER_VIDEO)}
               </Link>
               <a
                 href="#pricing"
@@ -102,7 +108,8 @@ export default function Home() {
               </a>
             </div>
             <p className="mt-5 text-sm text-slate">
-              {formatUSD(PRICE_PER_VIDEO)} per video. Finished videos under {MAX_VIDEO_SECONDS} seconds.
+              Set up a free account in a minute, then upload your clips. Finished videos under{" "}
+              {MAX_VIDEO_SECONDS} seconds.
             </p>
           </div>
 
@@ -154,6 +161,7 @@ export default function Home() {
                 <li>Up to {formatMinutes(MAX_RAW_SECONDS)} of raw footage per video</li>
                 <li>Finished videos under {MAX_VIDEO_SECONDS} seconds</li>
                 <li>Delivered within {TURNAROUND_DAYS} business days</li>
+                <li>{MAX_REVISIONS} revisions included</li>
                 <li>Sized for Reels, TikTok, and Shorts</li>
               </ul>
             </div>
@@ -209,10 +217,10 @@ export default function Home() {
               Your next customer is scrolling right now.
             </h2>
             <Link
-              href="/sign-up"
+              href="/sign-up?videos=1"
               className="shrink-0 rounded-full bg-caption px-6 py-3.5 font-semibold text-ink hover:bg-paper"
             >
-              Create an account
+              Get your first video edited for {formatUSD(PRICE_PER_VIDEO)}
             </Link>
           </div>
         </section>
