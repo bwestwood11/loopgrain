@@ -67,6 +67,9 @@ export async function objectExists(key: string) {
   return res.ok;
 }
 
+// R2 answers 204 whether or not the object existed, so any other status is a
+// real failure (bad credentials, outage) and the caller shouldn't assume it's gone.
 export async function deleteObject(key: string) {
-  await r2().client.fetch(objectUrl(key), { method: "DELETE" });
+  const res = await r2().client.fetch(objectUrl(key), { method: "DELETE" });
+  if (!res.ok) throw new Error(`R2 delete failed for ${key}: ${res.status}`);
 }

@@ -13,6 +13,7 @@ import {
   MAX_REVISIONS,
   PRICE_PER_VIDEO,
   REVISION_TURNAROUND_DAYS,
+  REVISION_WINDOW_DAYS,
   TURNAROUND_DAYS,
 } from "@/lib/pricing";
 
@@ -66,7 +67,7 @@ const FAQS = [
   },
   {
     q: "What if I want something changed?",
-    a: `Every video includes ${MAX_REVISIONS} revision requests. Once it's delivered, ask for changes from your dashboard, with timestamps if you can, and the updated video comes back within ${REVISION_TURNAROUND_DAYS} business days.`,
+    a: `Every video includes ${MAX_REVISIONS} revision requests. Once it's delivered, you have ${REVISION_WINDOW_DAYS} days to ask for changes from your dashboard, with timestamps if you can, and the updated video comes back within ${REVISION_TURNAROUND_DAYS} business days.`,
   },
   {
     q: "Who owns the finished videos?",

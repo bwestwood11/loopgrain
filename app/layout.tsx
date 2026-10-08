@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Anybody, Instrument_Sans } from "next/font/google";
-import { GoogleAnalytics } from "@next/third-parties/google";
+import { CookieBanner } from "@/components/cookie-banner";
+import { GoogleAnalytics } from "@/components/google-analytics";
 import "./globals.css";
 
 const anybody = Anybody({
@@ -26,7 +27,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${anybody.variable} ${instrument.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <CookieBanner />
+      </body>
       {process.env.NEXT_PUBLIC_GA_ID && (
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
       )}

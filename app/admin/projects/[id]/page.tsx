@@ -6,7 +6,7 @@ import { DownloadAllButton } from "@/components/download-all-button";
 import { StatusPill } from "@/components/project-status";
 import { getAdminProject } from "@/lib/admin";
 import { formatBytes, formatDate, formatDuration } from "@/lib/format";
-import { formatUSD, MAX_CLIP_SECONDS } from "@/lib/pricing";
+import { formatUSD, MAX_CLIP_SECONDS, RAW_CLIP_RETENTION_DAYS } from "@/lib/pricing";
 import { presignDownload } from "@/lib/r2";
 import { requireAdmin } from "@/lib/session";
 
@@ -62,7 +62,11 @@ export default async function AdminProjectPage(props: PageProps<"/admin/projects
               {allClipLinks.length > 1 && <DownloadAllButton urls={allClipLinks} />}
             </div>
             {clips.length === 0 ? (
-              <p className="mt-4 text-slate">No clips uploaded.</p>
+              <p className="mt-4 text-slate">
+                {p.status === "delivered"
+                  ? `Raw clips were deleted ${RAW_CLIP_RETENTION_DAYS} days after delivery.`
+                  : "No clips uploaded."}
+              </p>
             ) : (
               <ul className="mt-4 divide-y divide-line overflow-hidden rounded-xl bg-paper shadow-[0_1px_0_var(--color-line)]">
                 {clips.map((c, i) => (

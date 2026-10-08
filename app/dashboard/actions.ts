@@ -17,6 +17,8 @@ import {
   MAX_RAW_SECONDS,
   MAX_REVISIONS,
   MAX_VIDEOS_PER_ORDER,
+  REVISION_WINDOW_DAYS,
+  revisionWindowClosed,
 } from "@/lib/pricing";
 import { applyCredit } from "@/lib/orders";
 import { createCheckout } from "@/lib/stripe";
@@ -242,6 +244,11 @@ export async function requestRevision(
   const p = await ownedProject(uid, projectId);
   if (!p || p.status !== "delivered")
     return { error: "Revisions can only be requested on a delivered video." };
+  if (revisionWindowClosed(p.deliveredAt)) {
+    return {
+      error: `Revisions can be requested up to ${REVISION_WINDOW_DAYS} days after delivery, and that window has closed.`,
+    };
+  }
 
   const [{ used }] = await db
     .select({ used: count() })
