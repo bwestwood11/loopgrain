@@ -9,6 +9,7 @@ import {
   startCheckout,
   startClipUpload,
 } from "@/app/dashboard/actions";
+import { track, videoItems } from "@/lib/analytics";
 import { formatBytes, formatDuration, formatMinutes } from "@/lib/format";
 import {
   formatUSD,
@@ -418,6 +419,7 @@ export function ClipUploader({
             startSubmit(async () => {
               setSubmitError(undefined);
               // Without credits this redirects to Stripe Checkout and never returns.
+              if (credits === 0) track("begin_checkout", videoItems(1));
               const result = await (credits > 0 ? sendWithCredit : startCheckout)(projectId);
               if (result?.error) setSubmitError(result.error);
             })

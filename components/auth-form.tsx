@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { track } from "@/lib/analytics";
 import { signIn, signUp } from "@/lib/auth-client";
 
 type Mode = "sign-in" | "sign-up";
@@ -40,6 +41,7 @@ export function AuthForm({ mode, next }: { mode: Mode; next: string }) {
       return;
     }
 
+    track(mode === "sign-up" ? "sign_up" : "login", { method: "email" });
     router.push(next);
     router.refresh();
   }

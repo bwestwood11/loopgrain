@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { buyVideos } from "@/app/dashboard/actions";
+import { track, videoItems } from "@/lib/analytics";
 import { formatUSD, MAX_VIDEOS_PER_ORDER, PRICE_PER_VIDEO } from "@/lib/pricing";
 
 const MIN = 1;
@@ -92,7 +93,7 @@ export function VideoCalculator({
       </dl>
 
       {signedIn ? (
-        <form action={action}>
+        <form action={action} onSubmit={() => track("begin_checkout", videoItems(count))}>
           <input type="hidden" name="quantity" value={count} />
           <button
             type="submit"
