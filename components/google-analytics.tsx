@@ -1,15 +1,8 @@
 import Script from "next/script";
-import { CONSENT_KEY } from "@/lib/analytics";
+import { CONSENT_KEY, OPT_IN_REGIONS } from "@/lib/analytics";
 
-// EEA, UK and Switzerland, where analytics cookies need opt-in consent.
-const OPT_IN_REGIONS = [
-  "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE", "IT",
-  "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE", "IS", "LI", "NO",
-  "GB", "CH",
-];
-
-// Loads GA with Google Consent Mode. Analytics cookies start off in the
-// regions above and on elsewhere; a choice made in the cookie banner overrides
+// Loads GA with Google Consent Mode. Analytics cookies start off in
+// OPT_IN_REGIONS and on elsewhere; a choice made in the cookie banner overrides
 // either. Without cookies GA still gets anonymous, cookieless pings. Ad
 // storage stays off everywhere: the site doesn't run Google Ads.
 export function GoogleAnalytics({ gaId }: { gaId: string }) {

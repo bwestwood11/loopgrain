@@ -4,12 +4,13 @@ import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { readConsent, saveConsent, subscribeConsent } from "@/lib/analytics";
 
-// Asks once for analytics cookies, then stays hidden until the visitor clears
-// their choice from the footer. Renders nothing on the server, so the banner
-// can't flash for visitors who already chose.
+// Asks once for analytics and marketing cookies together, then stays hidden
+// until the visitor clears their choice from the footer. Renders nothing on the
+// server, so the banner can't flash for visitors who already chose.
 export function CookieBanner() {
   const choice = useSyncExternalStore(subscribeConsent, readConsent, () => "server" as const);
-  if (!process.env.NEXT_PUBLIC_GA_ID || choice !== null) return null;
+  const tracking = process.env.NEXT_PUBLIC_GA_ID || process.env.NEXT_PUBLIC_META_PIXEL_ID;
+  if (!tracking || choice !== null) return null;
 
   return (
     <div
@@ -18,8 +19,8 @@ export function CookieBanner() {
       className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-xl rounded-2xl bg-ink p-5 text-paper shadow-2xl ring-1 ring-paper/20 sm:flex sm:items-center sm:gap-5"
     >
       <p className="text-sm text-paper/80">
-        We use analytics cookies to see how people find and use Loopgrain. No ads, and we
-        never sell your data.{" "}
+        We use cookies to understand how people find Loopgrain and to measure our ads on
+        Facebook and Instagram. We never sell your data.{" "}
         <Link href="/privacy" className="text-paper underline underline-offset-2">
           Privacy policy
         </Link>

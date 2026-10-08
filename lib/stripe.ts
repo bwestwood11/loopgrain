@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { order } from "@/db/schema";
 import { videoItems } from "./analytics";
 import { sendServerEvent, type GAVisitor } from "./ga-server";
+import { sendMetaPurchase } from "./meta-server";
 import { applyCredit } from "./orders";
 import { PRICE_PER_VIDEO } from "./pricing";
 
@@ -23,14 +24,22 @@ type CheckoutInput = {
   // Present for "Pay and send" on a single project; absent for buying videos up front.
   project?: { id: string; title: string; clipCount: number };
   returnUrl: string;
-  // Carried through to the webhook so the purchase is credited in GA.
+  // Carried through to the webhook so the purchase is credited in GA and Meta.
   ga: GAVisitor;
+  meta: Record<string, string>;
 };
 
 // Records an unpaid order, then opens a Stripe Checkout for it. The price is
 // defined here (from lib/pricing.ts) rather than as a Stripe Price, so the
 // site and the charge can't drift apart.
-export async function createCheckout({ user, quantity, project, returnUrl, ga }: CheckoutInput) {
+export async function createCheckout({
+  user,
+  quantity,
+  project,
+  returnUrl,
+  ga,
+  meta,
+}: CheckoutInput) {
   if (project) {
     // Close earlier unpaid checkouts for this project so it can't be paid for twice.
     const stale = await db
@@ -72,6 +81,7 @@ export async function createCheckout({ user, quantity, project, returnUrl, ga }:
       ...(project && { projectId: project.id }),
       ...(ga.clientId && { gaClientId: ga.clientId }),
       ...(ga.sessionId && { gaSessionId: ga.sessionId }),
+      ...meta,
     },
     payment_intent_data: { metadata: { orderId } },
     line_items: [
@@ -128,6 +138,9 @@ export async function fulfillCheckout(sessionId: string) {
       },
       { live: session.livemode },
     ).catch((err) => console.error("GA purchase event failed", err));
+    await sendMetaPurchase(session, paid.quantity).catch((err) =>
+      console.error("Meta purchase event failed", err),
+    );
   }
   return true;
 }

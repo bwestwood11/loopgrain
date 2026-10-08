@@ -46,7 +46,8 @@ export default function PrivacyPage() {
             Loopgrain edits short-form videos for small businesses. To do that we need your
             footage, a way to reach you, and a way to get paid. This page explains what we
             collect, why, who else handles it, and how to get it deleted. We don&apos;t sell your
-            information, and we don&apos;t use it for advertising.
+            information. We do advertise on Facebook and Instagram, and we measure those ads as
+            described below.
           </p>
 
           <div className="mt-12 space-y-10">
@@ -74,6 +75,13 @@ export default function PrivacyPage() {
                   (city or country, not your exact address), and actions like signing up, starting
                   checkout, and completing a purchase.
                 </li>
+                <li>
+                  <strong>Ad measurement data.</strong> Through the Meta Pixel and Meta&apos;s
+                  Conversions API: the pages you visit, whether you signed up or bought, and, when
+                  you buy, the amount, your IP address, browser type, and a hashed (scrambled,
+                  not readable) copy of your email address. Meta uses this to tell us which of our
+                  ads led to a sign-up or purchase.
+                </li>
               </ul>
             </Section>
 
@@ -85,6 +93,10 @@ export default function PrivacyPage() {
                 <li>
                   To understand which pages and marketing bring people to Loopgrain, so we can
                   improve the site.
+                </li>
+                <li>
+                  To measure and improve our ads on Facebook and Instagram, and show them to
+                  people more likely to be interested.
                 </li>
               </ul>
             </Section>
@@ -124,6 +136,17 @@ export default function PrivacyPage() {
                   <strong>Google Analytics</strong> measures how the site is used.
                 </li>
                 <li>
+                  <strong>Meta</strong> (Facebook and Instagram) measures and optimizes our ads.
+                  Meta handles this data under its own{" "}
+                  <a
+                    href="https://www.facebook.com/privacy/policy/"
+                    className="font-semibold text-cobalt underline-offset-2 hover:underline"
+                  >
+                    privacy policy
+                  </a>
+                  .
+                </li>
+                <li>
                   <strong>Our website hosting provider</strong> serves the site and processes
                   requests to it.
                 </li>
@@ -143,14 +166,22 @@ export default function PrivacyPage() {
                 </li>
                 <li>
                   <strong>Analytics cookies.</strong> Set by Google Analytics to count visits and
-                  tell new visitors from returning ones. If you&apos;re in the EU, UK, or
-                  Switzerland, these are only set after you click Accept. Elsewhere they&apos;re on
-                  unless you click Decline. When they&apos;re off, Google Analytics still receives
-                  basic, anonymous page visit information without cookies.
+                  tell new visitors from returning ones. When they&apos;re off, Google Analytics
+                  still receives basic, anonymous page visit information without cookies.
                 </li>
                 <li>
-                  <strong>Your cookie choice</strong> is saved in your browser so we don&apos;t
-                  ask again.
+                  <strong>Marketing cookies.</strong> Set by the Meta Pixel to measure our
+                  Facebook and Instagram ads. When they&apos;re off, the Pixel doesn&apos;t load and
+                  we don&apos;t send your purchase to Meta.
+                </li>
+                <li>
+                  <strong>When they&apos;re on.</strong> If you&apos;re in the EU, UK, or
+                  Switzerland, analytics and marketing cookies are only used after you click
+                  Accept. Elsewhere they&apos;re on unless you click Decline.
+                </li>
+                <li>
+                  <strong>Your cookie choice</strong> is saved in your browser (and a cookie, so
+                  our server can respect it too) so we don&apos;t ask again.
                 </li>
               </ul>
               <p>
@@ -162,6 +193,13 @@ export default function PrivacyPage() {
                   className="font-semibold text-cobalt underline-offset-2 hover:underline"
                 >
                   Analytics opt-out add-on
+                </a>
+                , and manage ad preferences in your{" "}
+                <a
+                  href="https://accountscenter.facebook.com/ad_preferences"
+                  className="font-semibold text-cobalt underline-offset-2 hover:underline"
+                >
+                  Meta ad settings
                 </a>
                 .
               </p>

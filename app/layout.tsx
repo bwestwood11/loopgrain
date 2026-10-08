@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Anybody, Instrument_Sans } from "next/font/google";
 import { CookieBanner } from "@/components/cookie-banner";
 import { GoogleAnalytics } from "@/components/google-analytics";
+import { MetaPixel } from "@/components/meta-pixel";
 import "./globals.css";
 
 const anybody = Anybody({
@@ -30,6 +31,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         {children}
         <CookieBanner />
+        {process.env.NEXT_PUBLIC_META_PIXEL_ID && (
+          <MetaPixel pixelId={process.env.NEXT_PUBLIC_META_PIXEL_ID} />
+        )}
       </body>
       {process.env.NEXT_PUBLIC_GA_ID && (
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
