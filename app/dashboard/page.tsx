@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { StatusPill } from "@/components/project-status";
 import { VideoCalculator } from "@/components/video-calculator";
-import { TrackPurchase } from "@/components/track-purchase";
-import { availableCredits, paidOrderForSession } from "@/lib/orders";
+import { availableCredits } from "@/lib/orders";
 import { listProjects, type ProjectSummary } from "@/lib/projects";
 import { requireUser } from "@/lib/session";
 import { fulfillCheckout } from "@/lib/stripe";
@@ -29,11 +28,7 @@ export default async function DashboardPage(props: PageProps<"/dashboard">) {
     typeof session_id === "string" &&
     (await fulfillCheckout(session_id).catch(() => false));
 
-  const [projects, credits, purchase] = await Promise.all([
-    listProjects(user.id),
-    availableCredits(user.id),
-    paid && typeof session_id === "string" ? paidOrderForSession(user.id, session_id) : undefined,
-  ]);
+  const [projects, credits] = await Promise.all([listProjects(user.id), availableCredits(user.id)]);
   const firstName = user.name.split(" ")[0];
 
   const drafts = projects.filter((p) => p.status === "draft");
@@ -62,9 +57,6 @@ export default async function DashboardPage(props: PageProps<"/dashboard">) {
         )}
       </div>
 
-      {purchase && typeof session_id === "string" && (
-        <TrackPurchase transactionId={session_id} {...purchase} />
-      )}
       {checkout === "success" && (
         <p
           role="status"

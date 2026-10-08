@@ -1,5 +1,5 @@
 import type Stripe from "stripe";
-import { fulfillCheckout, stripe } from "@/lib/stripe";
+import { fulfillCheckout, reportRefunds, stripe } from "@/lib/stripe";
 
 // Stripe calls this after checkout. The signature check needs the raw body,
 // so read it as text before anything parses it.
@@ -21,6 +21,9 @@ export async function POST(request: Request) {
     case "checkout.session.async_payment_succeeded":
       // A non-2xx response makes Stripe retry, so let failures throw.
       await fulfillCheckout(event.data.object.id);
+      break;
+    case "charge.refunded":
+      await reportRefunds(event.data.object);
       break;
   }
   return new Response(null, { status: 200 });

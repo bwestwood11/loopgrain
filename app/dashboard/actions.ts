@@ -21,6 +21,7 @@ import {
   revisionWindowClosed,
 } from "@/lib/pricing";
 import { applyCredit } from "@/lib/orders";
+import { gaVisitorFromCookies } from "@/lib/ga-server";
 import { createCheckout } from "@/lib/stripe";
 
 // Every action re-checks the session and ownership: Server Actions are
@@ -187,6 +188,7 @@ export async function buyVideos(_prev: FormState, formData: FormData): Promise<F
       user: session.user,
       quantity,
       returnUrl: `${await siteUrl()}/dashboard`,
+      ga: await gaVisitorFromCookies(),
     });
   } catch (err) {
     console.error(err);
@@ -213,6 +215,7 @@ export async function startCheckout(projectId: string): Promise<FormState> {
       quantity: 1,
       project: { id: projectId, title: p.title, clipCount: n },
       returnUrl: `${await siteUrl()}/dashboard/projects/${projectId}`,
+      ga: await gaVisitorFromCookies(),
     });
   } catch (err) {
     console.error(err);

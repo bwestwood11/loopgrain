@@ -12,22 +12,6 @@ export async function availableCredits(userId: string) {
   return row.n;
 }
 
-// The paid order behind a Stripe Checkout session, so the page Stripe returns
-// to can report the purchase to analytics.
-export async function paidOrderForSession(userId: string, sessionId: string) {
-  const [row] = await db
-    .select({ quantity: order.quantity, amountCents: order.amountCents })
-    .from(order)
-    .where(
-      and(
-        eq(order.stripeCheckoutSessionId, sessionId),
-        eq(order.userId, userId),
-        isNotNull(order.paidAt),
-      ),
-    );
-  return row;
-}
-
 // Charges one prepaid video to the project and sends it to the editor.
 // Incrementing `used` with a `used < quantity` guard is atomic per row, so two
 // tabs can't spend the same credit. Prefers `preferOrderId` when given.

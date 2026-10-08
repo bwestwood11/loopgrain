@@ -3,6 +3,8 @@ import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import Stripe from "stripe";
 import { db } from "@/db";
 import { order } from "@/db/schema";
+import { videoItems } from "./analytics";
+import { sendServerEvent, type GAVisitor } from "./ga-server";
 import { applyCredit } from "./orders";
 import { PRICE_PER_VIDEO } from "./pricing";
 
@@ -21,12 +23,14 @@ type CheckoutInput = {
   // Present for "Pay and send" on a single project; absent for buying videos up front.
   project?: { id: string; title: string; clipCount: number };
   returnUrl: string;
+  // Carried through to the webhook so the purchase is credited in GA.
+  ga: GAVisitor;
 };
 
 // Records an unpaid order, then opens a Stripe Checkout for it. The price is
 // defined here (from lib/pricing.ts) rather than as a Stripe Price, so the
 // site and the charge can't drift apart.
-export async function createCheckout({ user, quantity, project, returnUrl }: CheckoutInput) {
+export async function createCheckout({ user, quantity, project, returnUrl, ga }: CheckoutInput) {
   if (project) {
     // Close earlier unpaid checkouts for this project so it can't be paid for twice.
     const stale = await db
@@ -63,7 +67,12 @@ export async function createCheckout({ user, quantity, project, returnUrl }: Che
     mode: "payment",
     customer_email: user.email,
     client_reference_id: user.id,
-    metadata: { orderId, ...(project && { projectId: project.id }) },
+    metadata: {
+      orderId,
+      ...(project && { projectId: project.id }),
+      ...(ga.clientId && { gaClientId: ga.clientId }),
+      ...(ga.sessionId && { gaSessionId: ga.sessionId }),
+    },
     payment_intent_data: { metadata: { orderId } },
     line_items: [
       {
@@ -104,5 +113,60 @@ export async function fulfillCheckout(sessionId: string) {
   // If the project was already sent (say, with an earlier credit), the payment
   // simply stays on their balance.
   if (paid?.projectId) await applyCredit(paid.userId, paid.projectId, paid.id);
+
+  // Only the call that marked the order paid reports it, so GA counts it once.
+  if (paid) {
+    await sendServerEvent(
+      gaVisitor(session),
+      {
+        name: "purchase",
+        params: {
+          ...videoItems(paid.quantity),
+          transaction_id: session.id,
+          value: (session.amount_total ?? 0) / 100,
+        },
+      },
+      { live: session.livemode },
+    ).catch((err) => console.error("GA purchase event failed", err));
+  }
   return true;
+}
+
+function gaVisitor(session: Stripe.Checkout.Session): GAVisitor {
+  return {
+    clientId: session.metadata?.gaClientId,
+    sessionId: session.metadata?.gaSessionId,
+  };
+}
+
+// Reports each refund on a charge to GA once, so GA revenue drops when Stripe's
+// does. Stripe sends one charge.refunded per refund (partial refunds included);
+// marking each refund's metadata keeps webhook retries from double counting.
+export async function reportRefunds(charge: Stripe.Charge) {
+  const paymentIntent =
+    typeof charge.payment_intent === "string" ? charge.payment_intent : charge.payment_intent?.id;
+  if (!paymentIntent) return;
+
+  const {
+    data: [session],
+  } = await stripe().checkout.sessions.list({ payment_intent: paymentIntent, limit: 1 });
+  if (!session) return;
+
+  const refunds = await stripe().refunds.list({ charge: charge.id, limit: 100 });
+  for (const refund of refunds.data) {
+    if (refund.status !== "succeeded" || refund.metadata?.gaReported) continue;
+    await sendServerEvent(
+      gaVisitor(session),
+      {
+        name: "refund",
+        params: {
+          currency: refund.currency.toUpperCase(),
+          transaction_id: session.id,
+          value: refund.amount / 100,
+        },
+      },
+      { live: charge.livemode },
+    );
+    await stripe().refunds.update(refund.id, { metadata: { gaReported: "true" } });
+  }
 }

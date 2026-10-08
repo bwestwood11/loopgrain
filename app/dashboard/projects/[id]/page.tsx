@@ -19,8 +19,7 @@ import { getProject } from "@/lib/projects";
 import { presignDownload } from "@/lib/r2";
 import { requireUser } from "@/lib/session";
 import { fulfillCheckout } from "@/lib/stripe";
-import { availableCredits, paidOrderForSession } from "@/lib/orders";
-import { TrackPurchase } from "@/components/track-purchase";
+import { availableCredits } from "@/lib/orders";
 
 export const metadata: Metadata = { title: "Project | Loopgrain" };
 
@@ -36,12 +35,6 @@ export default async function ProjectPage(props: PageProps<"/dashboard/projects/
     if (await fulfillCheckout(session_id).catch(() => false)) data = await getProject(user.id, id);
     if (!data) notFound();
   }
-
-  // Looked up separately because the webhook may have recorded the payment first.
-  const purchase =
-    checkout === "success" && typeof session_id === "string"
-      ? await paidOrderForSession(user.id, session_id)
-      : undefined;
 
   const { project, clips, deliverables, revisions } = data;
   const credits = project.status === "draft" ? await availableCredits(user.id) : 0;
@@ -62,9 +55,6 @@ export default async function ProjectPage(props: PageProps<"/dashboard/projects/
 
       <Progress status={project.status} />
 
-      {purchase && typeof session_id === "string" && (
-        <TrackPurchase transactionId={session_id} {...purchase} />
-      )}
       {checkout === "success" && (
         <Banner tone={project.paidAt ? "good" : "info"}>
           {project.paidAt
