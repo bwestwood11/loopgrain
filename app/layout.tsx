@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Anybody, Instrument_Sans } from "next/font/google";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 
 const anybody = Anybody({
@@ -26,6 +27,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${anybody.variable} ${instrument.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
+      {process.env.NEXT_PUBLIC_GA_ID && (
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
+      )}
     </html>
   );
 }
