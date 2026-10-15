@@ -112,6 +112,11 @@ export const project = pgTable(
   (t) => [index("project_user_idx").on(t.userId)],
 );
 
+export const orderKind = pgEnum("order_kind", [
+  "paid", // bought through Stripe Checkout
+  "free_trial", // the free first video every new account gets
+]);
+
 // One Stripe payment for `quantity` videos. Each submitted project uses one;
 // unused ones are the customer's prepaid balance.
 export const order = pgTable(
@@ -121,6 +126,7 @@ export const order = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    kind: orderKind("kind").notNull().default("paid"),
     quantity: integer("quantity").notNull(),
     used: integer("used").notNull().default(0),
     // Set when the order was started from a project's "Pay and send" button.

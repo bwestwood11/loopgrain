@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { StatusPill } from "@/components/project-status";
 import { VideoCalculator } from "@/components/video-calculator";
-import { availableCredits } from "@/lib/orders";
+import { VerifyEmailNotice } from "@/components/verify-email-notice";
+import { creditBalance } from "@/lib/orders";
 import { listProjects, type ProjectSummary } from "@/lib/projects";
 import { requireUser } from "@/lib/session";
 import { fulfillCheckout } from "@/lib/stripe";
@@ -20,7 +21,7 @@ export const metadata: Metadata = { title: "Dashboard | Loopgrain" };
 
 export default async function DashboardPage(props: PageProps<"/dashboard">) {
   const user = await requireUser();
-  const { checkout, session_id } = await props.searchParams;
+  const { checkout, session_id, verified, error } = await props.searchParams;
 
   // Back from buying videos: record the payment now rather than waiting for the webhook.
   const paid =
@@ -28,7 +29,10 @@ export default async function DashboardPage(props: PageProps<"/dashboard">) {
     typeof session_id === "string" &&
     (await fulfillCheckout(session_id).catch(() => false));
 
-  const [projects, credits] = await Promise.all([listProjects(user.id), availableCredits(user.id)]);
+  const [projects, { credits, free, freeLocked }] = await Promise.all([
+    listProjects(user.id),
+    creditBalance(user.id),
+  ]);
   const firstName = user.name.split(" ")[0];
 
   const drafts = projects.filter((p) => p.status === "draft");
@@ -67,6 +71,21 @@ export default async function DashboardPage(props: PageProps<"/dashboard">) {
             : "Your payment is processing. Your balance will update once Stripe confirms it."}
         </p>
       )}
+      {verified && !error && free > 0 && (
+        <p role="status" className="mt-6 rounded-xl bg-[#d4f0e2] px-4 py-3 text-sm font-medium text-[#16603f]">
+          Email confirmed. Your first video is free. Start a project to use it.
+        </p>
+      )}
+      {verified && error && freeLocked > 0 && (
+        <p role="status" className="mt-6 rounded-xl bg-paper px-4 py-3 text-sm font-medium">
+          That link has expired or was already used. Send yourself a new one below.
+        </p>
+      )}
+      {freeLocked > 0 && (
+        <div className="mt-6">
+          <VerifyEmailNotice email={user.email} />
+        </div>
+      )}
       {checkout === "cancelled" && (
         <p role="status" className="mt-6 rounded-xl bg-paper px-4 py-3 text-sm font-medium">
           Checkout cancelled. You haven&apos;t been charged.
@@ -76,7 +95,7 @@ export default async function DashboardPage(props: PageProps<"/dashboard">) {
       <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_22rem]">
         <div className="min-w-0 space-y-12">
           {projects.length === 0 ? (
-            <Welcome credits={credits} />
+            <Welcome credits={credits} free={free + freeLocked} />
           ) : (
             <>
               {drafts.length > 0 && (
@@ -100,7 +119,7 @@ export default async function DashboardPage(props: PageProps<"/dashboard">) {
         </div>
 
         <aside className="h-fit space-y-4 lg:sticky lg:top-6">
-          {credits > 0 && <Balance credits={credits} />}
+          {credits > 0 && <Balance credits={credits} free={free} />}
           <section aria-labelledby="order-heading">
             <h2 id="order-heading" className="mb-3 text-xl font-semibold">
               {credits > 0 ? "Buy more videos" : "Order videos"}
@@ -132,7 +151,7 @@ const STEPS = [
   },
 ];
 
-function Welcome({ credits }: { credits: number }) {
+function Welcome({ credits, free }: { credits: number; free: number }) {
   return (
     <section className="rounded-2xl bg-ink p-6 text-paper sm:p-10">
       <h2 className="display text-4xl sm:text-5xl">Let&apos;s make your first video</h2>
@@ -153,7 +172,9 @@ function Welcome({ credits }: { credits: number }) {
           Start your first video
         </Link>
         <span className="text-sm text-paper/60">
-          {credits > 0
+          {free > 0 && credits <= free
+            ? "Your first video is free."
+            : credits > 0
             ? `You have ${credits} prepaid ${credits === 1 ? "video" : "videos"}.`
             : `${formatUSD(PRICE_PER_VIDEO)} per video. No subscription.`}
         </span>
@@ -235,12 +256,13 @@ function ProjectCard({ project: p }: { project: ProjectSummary }) {
   );
 }
 
-function Balance({ credits }: { credits: number }) {
+function Balance({ credits, free }: { credits: number; free: number }) {
   return (
     <section className="rounded-2xl bg-paper p-5 shadow-[0_1px_0_var(--color-line)]">
-      <p className="text-sm text-slate">Prepaid videos</p>
+      <p className="text-sm text-slate">{free === credits ? "Free videos" : "Videos on your account"}</p>
       <p className="display mt-1 text-5xl tabular-nums">{credits}</p>
       <p className="mt-2 text-sm text-slate">
+        {free > 0 && free < credits && `Includes your free first video. `}
         Each project you send to your editor uses one. No need to check out again.
       </p>
       <Link

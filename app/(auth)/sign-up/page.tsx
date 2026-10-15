@@ -14,7 +14,7 @@ export default async function SignUpPage({ searchParams }: PageProps<"/sign-up">
       <p className="mt-2 mb-6 text-slate">
         {count > 0
           ? `You're one step from ordering ${count} ${count === 1 ? "video" : "videos"}.`
-          : "You need an account to order videos. It takes a minute."}
+          : "Confirm your email after signing up and your first video is free."}
       </p>
       <AuthForm mode="sign-up" next={safeNext(next)} />
     </>

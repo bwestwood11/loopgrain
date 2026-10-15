@@ -11,6 +11,7 @@ import {
 } from "@/app/dashboard/actions";
 import { track, videoItems } from "@/lib/analytics";
 import { formatBytes, formatDuration, formatMinutes } from "@/lib/format";
+import { VerifyEmailNotice } from "./verify-email-notice";
 import {
   formatUSD,
   MAX_CLIP_BYTES,
@@ -100,6 +101,9 @@ export function ClipUploader({
   usedSeconds,
   usedBytes,
   credits,
+  free,
+  freeLocked,
+  email,
 }: {
   projectId: string;
   uploadedIds: string[];
@@ -108,6 +112,11 @@ export function ClipUploader({
   usedBytes: number;
   // Prepaid videos on the account; when > 0, sending uses one instead of checking out.
   credits: number;
+  // How many of `credits` are the free first video (spent before bought ones).
+  free: number;
+  // The free video, while it waits on email verification.
+  freeLocked: number;
+  email: string;
 }) {
   const router = useRouter();
   const [items, setItems] = useState<Item[]>([]);
@@ -407,7 +416,9 @@ export function ClipUploader({
             : busy
               ? "Hang tight while your clips finish uploading."
               : `${uploadedIds.length} ${uploadedIds.length === 1 ? "clip" : "clips"} ready. ${
-                  credits > 0
+                  free > 0
+                    ? "This uses your free first video."
+                    : credits > 0
                     ? `This uses 1 of your ${credits} prepaid ${credits === 1 ? "video" : "videos"}.`
                     : "Your editor starts once payment goes through."
                 } You can't add clips after that.`}
@@ -429,12 +440,19 @@ export function ClipUploader({
           {credits > 0
             ? submitting
               ? "Sending…"
-              : "Send to editor"
+              : free > 0
+                ? "Send to editor, free"
+                : "Send to editor"
             : submitting
               ? "Opening checkout…"
               : `Pay ${formatUSD(PRICE_PER_VIDEO)} and send`}
         </button>
       </div>
+      {credits === 0 && freeLocked > 0 && (
+        <div className="mt-3">
+          <VerifyEmailNotice email={email} compact />
+        </div>
+      )}
       {submitError && (
         <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3.5 py-2.5 text-sm text-red-800">
           {submitError}

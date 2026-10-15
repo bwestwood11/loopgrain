@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { NewProjectForm } from "@/components/new-project-form";
-import { availableCredits } from "@/lib/orders";
+import { creditBalance } from "@/lib/orders";
 import { formatUSD, PRICE_PER_VIDEO, TURNAROUND_DAYS } from "@/lib/pricing";
 import { requireUser } from "@/lib/session";
 
@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "New video | Loopgrain" };
 
 export default async function NewProjectPage() {
   const user = await requireUser("/dashboard/projects/new");
-  const credits = await availableCredits(user.id);
+  const { credits, free, freeLocked } = await creditBalance(user.id);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -19,7 +19,11 @@ export default async function NewProjectPage() {
       <h1 className="display mt-4 text-5xl">New video</h1>
       <p className="mt-3 text-slate">
         One project becomes one finished video. You&apos;ll upload your clips on the next screen.
-        {credits > 0
+        {free > 0
+          ? " It's free: this is your first video."
+          : freeLocked > 0 && credits === 0
+          ? " It's free once you confirm your email."
+          : credits > 0
           ? ` It uses 1 of your ${credits} prepaid ${credits === 1 ? "video" : "videos"} when you send it.`
           : ` ${formatUSD(PRICE_PER_VIDEO)}, paid when you send it.`}
         {` Delivered within ${TURNAROUND_DAYS} business days.`}

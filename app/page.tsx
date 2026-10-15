@@ -78,6 +78,14 @@ const FAQS = [
 export default function Home() {
   return (
     <>
+      <Link
+        href="/sign-up"
+        className="block bg-caption px-4 py-2.5 text-center text-sm font-semibold text-ink hover:bg-[#ffdc66]"
+      >
+        New here? Your first video is free, a {formatUSD(PRICE_PER_VIDEO)} value.{" "}
+        <span className="underline underline-offset-2">Claim it</span>
+        <span aria-hidden="true"> →</span>
+      </Link>
       <SiteHeader />
 
       <main className="flex-1 overflow-x-clip">
@@ -96,10 +104,10 @@ export default function Home() {
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
-                href="/sign-up?videos=1"
+                href="/sign-up"
                 className="rounded-full bg-cobalt px-6 py-3.5 font-semibold text-white hover:bg-cobalt-deep"
               >
-                Get your first video edited for {formatUSD(PRICE_PER_VIDEO)}
+                Get your first video edited free
               </Link>
               <a
                 href="#pricing"
@@ -109,7 +117,8 @@ export default function Home() {
               </a>
             </div>
             <p className="mt-5 text-sm text-slate">
-              Set up a free account in a minute, then upload your clips. Finished videos under{" "}
+              Set up a free account in a minute, confirm your email, and your first video is on
+              us. Finished videos under{" "}
               {MAX_VIDEO_SECONDS} seconds.
             </p>
           </div>
@@ -155,8 +164,8 @@ export default function Home() {
                 Per video.
               </h2>
               <p className="mt-5 max-w-lg text-lg leading-relaxed text-slate">
-                Every video gets the full edit for {formatUSD(PRICE_PER_VIDEO)}. Order one to try us
-                out or fifty for the quarter. The price doesn&apos;t change and nothing renews.
+                Every video gets the full edit for {formatUSD(PRICE_PER_VIDEO)}, and your first
+                one is free. Try us out, then order fifty for the quarter. The price doesn&apos;t change and nothing renews.
               </p>
               <ul className="mt-6 space-y-2 text-slate">
                 <li>Up to {formatMinutes(MAX_RAW_SECONDS)} of raw footage per video</li>
@@ -218,10 +227,10 @@ export default function Home() {
               Your next customer is scrolling right now.
             </h2>
             <Link
-              href="/sign-up?videos=1"
+              href="/sign-up"
               className="shrink-0 rounded-full bg-caption px-6 py-3.5 font-semibold text-ink hover:bg-paper"
             >
-              Get your first video edited for {formatUSD(PRICE_PER_VIDEO)}
+              Get your first video edited free
             </Link>
           </div>
         </section>

@@ -174,7 +174,9 @@ export default async function AdminProjectPage(props: PageProps<"/admin/projects
           <div>
             <h2 className="font-semibold">Payment</h2>
             <p className="mt-2 text-sm text-slate">
-              {p.paidAt
+              {p.paidAt && order?.kind === "free_trial"
+                ? `Free first video · sent ${formatDate(p.paidAt)}`
+                : p.paidAt
                 ? `Paid ${formatDate(p.paidAt)}${
                     order
                       ? order.quantity > 1

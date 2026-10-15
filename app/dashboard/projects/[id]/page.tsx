@@ -19,7 +19,7 @@ import { getProject } from "@/lib/projects";
 import { presignDownload } from "@/lib/r2";
 import { requireUser } from "@/lib/session";
 import { fulfillCheckout } from "@/lib/stripe";
-import { availableCredits } from "@/lib/orders";
+import { creditBalance } from "@/lib/orders";
 
 export const metadata: Metadata = { title: "Project | Loopgrain" };
 
@@ -37,7 +37,8 @@ export default async function ProjectPage(props: PageProps<"/dashboard/projects/
   }
 
   const { project, clips, deliverables, revisions } = data;
-  const credits = project.status === "draft" ? await availableCredits(user.id) : 0;
+  const balance =
+    project.status === "draft" ? await creditBalance(user.id) : { credits: 0, free: 0, freeLocked: 0 };
   const uploaded = clips.filter((c) => c.uploaded);
   const isDraft = project.status === "draft";
   const openRevision = revisions.find((r) => !r.resolved);
@@ -85,7 +86,10 @@ export default async function ProjectPage(props: PageProps<"/dashboard/projects/
                   uploadedIds={uploaded.map((c) => c.id)}
                   usedSeconds={uploaded.reduce((t, c) => t + (c.durationSeconds ?? 0), 0)}
                   usedBytes={uploaded.reduce((t, c) => t + c.sizeBytes, 0)}
-                  credits={credits}
+                  credits={balance.credits}
+                  free={balance.free}
+                  freeLocked={balance.freeLocked}
+                  email={user.email}
                 />
               </div>
             </section>

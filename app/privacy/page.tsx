@@ -129,6 +129,10 @@ export default function PrivacyPage() {
                   <strong>Cloudflare</strong> stores your uploaded clips and finished videos.
                 </li>
                 <li>
+                  <strong>Resend</strong> sends account emails, like the link to confirm your email
+                  address.
+                </li>
+                <li>
                   <strong>Neon</strong> hosts our database (your account details, orders, and
                   project notes).
                 </li>

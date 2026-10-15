@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { track } from "@/lib/analytics";
 import { signIn, signUp } from "@/lib/auth-client";
+import { VERIFY_CALLBACK } from "./verify-email-notice";
 
 type Mode = "sign-in" | "sign-up";
 
@@ -32,6 +33,7 @@ export function AuthForm({ mode, next }: { mode: Mode; next: string }) {
             businessName: String(form.get("businessName")) || undefined,
             email,
             password,
+            callbackURL: VERIFY_CALLBACK,
           })
         : await signIn.email({ email, password });
 

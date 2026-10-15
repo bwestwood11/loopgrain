@@ -123,7 +123,7 @@ export function VideoCalculator({
             Order {count} {noun} for {formatUSD(PRICE_PER_VIDEO * count)}
           </Link>
           <p className="mt-3 text-center text-xs text-paper/60">
-            You&apos;ll set up a free account first. No subscription.
+            You&apos;ll set up a free account first, and new accounts get one extra video free. No subscription.
           </p>
         </>
       )}
