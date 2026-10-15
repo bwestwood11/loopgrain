@@ -80,7 +80,7 @@ export default function Home() {
     <>
       <Link
         href="/sign-up"
-        className="block bg-caption px-4 py-2.5 text-center text-sm font-semibold text-ink hover:bg-[#ffdc66]"
+        className="sticky top-0 z-40 block bg-caption px-4 py-2.5 text-center text-sm font-semibold text-ink hover:bg-[#ffdc66]"
       >
         New here? Your first video is free, a {formatUSD(PRICE_PER_VIDEO)} value.{" "}
         <span className="underline underline-offset-2">Claim it</span>
@@ -155,7 +155,7 @@ export default function Home() {
         </section>
 
         {/* Pricing */}
-        <section id="pricing" className="scroll-mt-8 bg-paper py-20">
+        <section id="pricing" className="scroll-mt-24 bg-paper py-20">
           <div className="mx-auto grid w-full max-w-6xl gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:items-center">
             <div>
               <h2 className="display text-5xl sm:text-6xl">
@@ -198,7 +198,7 @@ export default function Home() {
         </section>
 
         {/* FAQ */}
-        <section id="faq" className="scroll-mt-8 bg-paper py-20">
+        <section id="faq" className="scroll-mt-24 bg-paper py-20">
           <div className="mx-auto w-full max-w-3xl px-4 sm:px-6">
             <h2 className="display text-5xl sm:text-6xl">Questions</h2>
             <div className="mt-8 divide-y divide-line border-y border-line">
